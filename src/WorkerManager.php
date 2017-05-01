@@ -18,9 +18,182 @@ use GearmanWorker;
 class WorkerManager extends ManagerAbstracter
 {
     /**
+     * Bootstrap a set of workers and any vars that need to be set
+     */
+    protected function startWorkers()
+    {
+        $workersCount = [];
+        $jobs = $this->getJobs();
+
+        // If we have "doAllWorkers" workers, start them first do_all workers register all functions
+        if (($num = $this->doAllWorkers) > 0) {
+            for ($x = 0; $x < $num; $x++) {
+                $this->startWorker();
+
+                /*
+                 * Don't start workers too fast. They can overwhelm the
+                 * gearmand server and lead to connection timeouts.
+                 */
+                usleep(500000);
+            }
+
+            foreach ($jobs as $job) {
+                if (!$this->getJobOpt($job, 'dedicated', false)) {
+                    $workersCount[$job] = $num;
+                }
+            }
+        }
+
+        // Next we loop the workers and ensure we have enough running for each worker
+        foreach ($this->handlers as $job => $handler) {
+            // If we don't have do_all workers, this won't be set, so we need to init it here
+            if (!isset($workersCount[$job])) {
+                $workersCount[$job] = 0;
+            }
+
+            $workerNum = (int)$this->getJobOpt($job, 'worker_num', 0);
+
+            while ($workersCount[$job] < $workerNum) {
+                $this->startWorker($job);
+
+                $workersCount[$job]++;
+
+                /*
+                 * Don't start workers too fast. They can overwhelm the
+                 * gearmand server and lead to connection timeouts.
+                 */
+                usleep(500000);
+            }
+        }
+
+        // Set the last code check time to now since we just loaded all the code
+        $this->lastCheckTime = time();
+    }
+
+    /**
+     * Begin monitor workers
+     *  - will monitoring children process running status
+     *
+     * @notice run in the parent main process, children process have been exited in the `startWorkers()`
+     */
+    protected function beginMonitor()
+    {
+        $this->setProcessTitle("Manager process");
+
+        // Main processing loop for the parent process
+        while (!$this->stopWork || count($this->children)) {
+            $status = null;
+
+            // Check for exited children
+            $exited = pcntl_wait($status, WNOHANG);
+
+            // We run other children, make sure this is a worker
+            if (isset($this->children[$exited])) {
+                /*
+                 * If they have exited, remove them from the children array
+                 * If we are not stopping work, start another in its place
+                 */
+                if ($exited) {
+                    $workerJobs = $this->children[$exited]['jobs'];
+                    $code = pcntl_wexitstatus($status);
+                    $exitStatus = $code === 0 ? 'exited' : $code;
+                    unset($this->children[$exited]);
+
+                    $this->logChildStatus($exited, $workerJobs, $exitStatus);
+
+                    if (!$this->stopWork) {
+                        $this->startWorker($workerJobs);
+                    }
+                }
+            }
+
+            if ($this->stopWork && time() - $this->stopTime > 60) {
+                $this->log('Children have not exited, killing.', self::LOG_PROC_INFO);
+                $this->stopChildren(SIGKILL);
+            } else {
+                // If any children have been running 150% of max run time, forcibly terminate them
+                foreach ($this->children as $pid => $child) {
+                    if (!empty($child['start_time']) && time() - $child['start_time'] > $this->maxLifetime * 1.5) {
+                        $this->logChildStatus($pid, $child['jobs'], "killed");
+                        Helper::killProcess($pid, SIGKILL);
+                    }
+                }
+            }
+
+            // php will eat up your cpu if you don't have this
+            usleep(10000);
+        }
+    }
+
+    /**
+     * Start a worker do there are assign jobs.
+     * If is in the parent, record child info.
+     *
+     * @param string|array $jobs Jobs for the current worker.
+     */
+    protected function startWorker($jobs = 'all')
+    {
+        $timeouts = [];
+        $defTimeout = $this->get('timeout', 0);
+        $jobs = is_string($jobs) && $jobs === self::DO_ALL ? $this->getJobs() : (array)$jobs;
+
+        foreach ($jobs as $job) {
+            $timeouts[$job] = (int)$this->getJobOpt($job, 'timeout', $defTimeout);
+        }
+
+        // fork process
+        $pid = pcntl_fork();
+
+        switch ($pid) {
+            case 0: // at children
+                $this->setProcessTitle("Worker process");
+
+                $this->isParent = false;
+                $this->parentPid = $this->pid;
+                $this->pid = getmypid();
+                $this->registerSignals(false);
+
+                if (count($jobs) > 1) {
+                    // shuffle the list to avoid queue preference
+                    shuffle($jobs);
+
+                    // sort the shuffled array by priority
+                    // uasort($jobs, array($this, 'sort_priority'));
+                }
+
+                if (($splay = $this->get('restart_splay')) > 0) {
+                    // Since all child threads use the same seed, we need to reseed with the pid so that we get a new "random" number.
+                    mt_srand($this->pid);
+
+                    $this->maxLifetime += mt_rand(0, $splay);
+                    $this->log("The worker adjusted max run time to {$this->maxLifetime} seconds", self::LOG_DEBUG);
+                }
+
+                $this->startDriverWorker($jobs, $timeouts);
+
+                $this->log('Child exiting', self::LOG_WORKER_INFO);
+                $this->quit();
+                break;
+
+            case -1: // fork failed.
+                $this->log("Could not fork children process!");
+                $this->stopWork = true;
+                $this->stopChildren();
+                break;
+
+            default: // at parent
+                $this->log("Started child (PID:$pid) (Jobs:" . implode(',', $jobs) . ')', self::LOG_PROC_INFO);
+                $this->children[$pid] = array(
+                    'jobs' => $jobs,
+                    'start_time' => time(),
+                );
+        }
+    }
+
+    /**
      * Starts a worker for the PECL library
      *
-     * @param   array $jobs     List of worker functions to add
+     * @param   array $jobs List of worker functions to add
      * @param   array $timeouts list of worker timeouts to pass to server
      * @return void
      * @throws \GearmanException
@@ -87,6 +260,26 @@ class WorkerManager extends ManagerAbstracter
         $gmWorker->unregisterAll();
     }
 
+
+    /**
+     * Validates the PECL compatible worker files/functions
+     */
+    protected function validateDriverWorkers()
+    {
+        foreach ($this->handlers as $func => $props) {
+            require_once $props["path"];
+            $real_func = $func;
+
+            if (!function_exists($real_func) &&
+                (!class_exists($real_func) || !method_exists($real_func, "run"))) {
+                $this->log("Function $real_func not found in ".$props["path"]);
+                posix_kill($this->pid, SIGUSR2);
+                exit();
+            }
+        }
+
+    }
+
     /**
      * Wrapper function handler for all registered functions
      * This allows us to do some nice logging when jobs are started/finished
@@ -135,56 +328,4 @@ class WorkerManager extends ManagerAbstracter
 
         return $ret;
     }
-
-    /**
-     * Shows the scripts help info with optional error message
-     * @param string $msg
-     */
-    protected function showHelp($msg = '')
-    {
-        $version = self::VERSION;
-        $script = $this->getScript();
-
-        if ($msg) {
-            echo "ERROR:\n  " . wordwrap($msg, 72, "\n  ") . "\n\n";
-        }
-
-        echo <<<EOF
-Gearman worker manager script tool. Version $version
-
-USAGE:
-  # $script -h | -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-a] [-p PID_FILE] {COMMAND}
-
-COMMANDS:
-  start         Start gearman worker manager
-  stop          Stop gearman worker manager 
-  restart       Restart gearman worker manager
-  status        Get gearman worker manager runtime status
-
-OPTIONS:
-  -a             Automatically check for new worker code
-  -c CONFIG      Worker configuration file
-  -s HOST[:PORT] Connect to server HOST and optional PORT
-  
-  -d             Daemon, detach and run in the background
-  -n NUMBER      Start NUMBER workers that do all jobs
-  -u USERNAME    Run workers as USERNAME
-  -g GROUP_NAME  Run workers as user's GROUP NAME
-  
-  -l LOG_FILE    Log output to LOG_FILE or use keyword 'syslog' for syslog support
-  -p PID_FILE    File to write process ID out to
-
-  -r NUMBER      Maximum job iterations per worker
-  -x SECONDS     Maximum seconds for a worker to live
-  -t SECONDS     Maximum number of seconds gearmand server should wait for a worker to complete work before timing out and reissuing work to another worker.
-  
-  -v LEVEL       Increase verbosity level by one. eg: -v vv
-  
-  -h,--help      Shows this help
-  -V             Display the version of the manager
-  -Z             Parse the command line and config file then dump it to the screen and exit.\n
-EOF;
-        exit(0);
-    }
-
 }

@@ -13,6 +13,7 @@ require __DIR__ . '/simple-loader.php';
 date_default_timezone_set('Asia/Shanghai');
 
 $config = [
+    'as_daemon' => false,
     'log_level' => WorkerManager::LOG_DEBUG,
     'log_file' => __DIR__ . '/workers.log',
     'pid_file' => __DIR__ . '/manager.pid',
