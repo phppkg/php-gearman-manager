@@ -324,18 +324,15 @@ abstract class ManagerAbstracter
     protected function handleCliCommand()
     {
         $result = Helper::parseParameters([
-            'a', 'h', 'V', 'Z'
+            'a', 'h', 'V', 'Z', 'help'
         ]);
 
         $this->script = $result[0];
         $this->command = $command = isset($result[1]) ? $result[1] : 'start';
         unset($result[0], $result[1]);
 
-        // parseCliOption
-        $this->parseCliOption($result);
-
-        $command = $this->command;
-
+        // loadCliOptions
+        $this->loadCliOptions($result);
 
         $masterPid = $this->getPidFromFile($this->pidFile);
         $masterIsStarted = ($masterPid > 0) && @posix_kill($masterPid, 0);
@@ -379,11 +376,132 @@ abstract class ManagerAbstracter
     }
 
     /**
-     * parseCliOption
+     * load the command line options
      * @param array $opts
-     * @return mixed
      */
-    abstract protected function parseCliOption(array $opts);
+    protected function loadCliOptions(array $opts)
+    {
+        $map = [
+            // 'a' => 'auto_reload', // auto load modify files
+            'c' => 'conf_file',   // config file
+            's' => 'servers', // server address
+
+            'd' => 'as_daemon',   // run in the background
+            'n' => 'worker_num',  // worker number do all jobs
+            'u' => 'user',
+            'g' => 'group',
+
+            'l' => 'log_file',
+            'p' => 'pid_file',
+
+            'r' => 'max_run_job', // max run jobs for a worker
+            'x' => 'max_lifetime',// max lifetime for a worker
+            't' => 'timeout',
+        ];
+
+        var_dump($opts);
+
+        // show help
+        if (isset($opts['h']) || isset($opts['help'])) {
+            $this->showHelp();
+        }
+
+        // load Config File
+        if ($file = $this->config['conf_file']) {
+            if (file_exists($file)) {
+                $this->showHelp("Config file {$this->config['file']} not found.");
+            }
+
+            $this->loadConfigFile($file);
+        }
+
+        // load opts values to config
+        foreach ($map as $k => $v) {
+            if (isset($opts[$k]) && $opts[$k]) {
+                $this->config[$v] = $opts[$k];
+            }
+        }
+
+        if (isset($opts['a'])) {
+            $this->config['auto_reload'] = $opts['a'];
+        }
+
+        if (isset($opts['v'])) {
+            switch ($opts['v']) {
+                case false:
+                    $this->verbose = self::LOG_INFO;
+                    break;
+                case 'v':
+                    $this->verbose = self::LOG_PROC_INFO;
+                    break;
+                case 'vv':
+                    $this->verbose = self::LOG_WORKER_INFO;
+                    break;
+                case 'vvv':
+                    $this->verbose = self::LOG_DEBUG;
+                    break;
+                case 'vvvv':
+                default:
+                    $this->verbose = self::LOG_CRAZY;
+                    break;
+            }
+
+            $this->config['log_level'] = $this->verbose;
+        }
+
+//        if ((int)$this->config['restart_splay'] > 0) {
+//            $this->worker_restart_splay = (int)$this->config['restart_splay'];
+//        }
+
+        // parseConfig
+        $this->initConfig($this->config);
+
+        // Debug option to dump the config and exit
+        if (isset($opts['Z'])) {
+            $this->stdout('There Are Configure Information:');
+            print_r($this->config);
+            $this->quit();
+        }
+    }
+
+    protected function initConfig($config)
+    {
+        $this->config['worker_num'] = (int)$config['worker_num'];
+        $this->config['max_lifetime'] = (int)$config['max_lifetime'];
+        $this->config['restart_splay'] = (int)$config['restart_splay'];
+        $this->config['timeout'] = (int)$config['timeout'];
+
+        if ($this->config['worker_num'] <= 0) {
+            $this->config['worker_num'] = 1;
+        }
+
+        if ($this->config['max_lifetime'] <= 100) {
+            $this->config['max_lifetime'] = 600;
+        }
+
+        if ($this->config['restart_splay'] <= 100) {
+            $this->config['restart_splay'] = 600;
+        }
+
+        if ($this->config['timeout'] <= 10) {
+            $this->config['timeout'] = 300;
+        }
+
+        $this->doAllWorkers = $this->config['worker_num'];
+        $this->maxLifetime = $this->config['max_lifetime'];
+        $this->verbose = (int)$this->config['log_level'];
+        $this->pidFile = trim($this->config['pid_file']);
+
+    }
+
+    protected function loadConfigFile($file)
+    {
+        if ($file && file_exists($file)) {
+            $config = require $file;
+
+            $this->setConfig($config);
+        }
+    }
 
     /**
      * bootstrap start
