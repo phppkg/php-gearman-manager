@@ -15,6 +15,14 @@ namespace inhere\gearman;
 class Helper
 {
     /**
+     * @return bool
+     */
+    public static function isMac()
+    {
+        return stripos(PHP_OS, 'Darwin') !== false;
+    }
+
+    /**
      * Parses $GLOBALS['argv'] for parameters and assigns them to an array.
      *
      * Supports:
@@ -65,6 +73,16 @@ class Helper
         }
 
         return $result;
+    }
+
+    /**
+     * check process exist
+     * @param $pid
+     * @return bool
+     */
+    public static function isRunning($pid)
+    {
+        return ($pid > 0) && @posix_kill($pid, 0);
     }
 
     /**

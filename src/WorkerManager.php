@@ -68,9 +68,9 @@ class WorkerManager extends ManagerAbstracter
      * Begin monitor workers
      *  - will monitoring children process running status
      *
-     * @notice run in the parent main process, children process have been exited in the `startWorkers()`
+     * @notice run in the parent main process, children process will exited in the `startWorkers()`
      */
-    protected function beginMonitor()
+    protected function startWorkerMonitor()
     {
         $this->setProcessTitle("pgm: Master process");
         $this->log('Begin monitor check runtime status for children', self::LOG_DEBUG);
@@ -151,9 +151,6 @@ class WorkerManager extends ManagerAbstracter
                 if (count($jobs) > 1) {
                     // shuffle the list to avoid queue preference
                     shuffle($jobs);
-
-                    // sort the shuffled array by priority
-                    // uasort($jobs, array($this, 'sort_priority'));
                 }
 
                 if (($splay = $this->get('restart_splay')) > 0) {
@@ -196,10 +193,11 @@ class WorkerManager extends ManagerAbstracter
     protected function startDriverWorker(array $jobs, array $timeouts = [])
     {
         $gmWorker = new GearmanWorker();
+        // 设置非阻塞式运行
         $gmWorker->addOptions(GEARMAN_WORKER_NON_BLOCKING);
         $gmWorker->setTimeout(5000);
 
-        $this->debug("The #{$this->id}(PID:{$this->pid}) Gearman worker started");
+        $this->debug("The Gearman worker started(PID:{$this->pid})");
 
         foreach ($this->getServers() as $s) {
             $this->log("Adding server $s", self::LOG_WORKER_INFO);
@@ -216,12 +214,12 @@ class WorkerManager extends ManagerAbstracter
 
         foreach ($jobs as $job) {
             $timeout = $timeouts[$job] >= 0 ? $timeouts[$job] : 0;
-            $this->log("Adding job to gearman worker, Name: $job Timeout: $timeout", self::LOG_WORKER_INFO);
+            $this->log("Adding job handler to gearman worker, Name: $job Timeout: $timeout", self::LOG_WORKER_INFO);
             $gmWorker->addFunction($job, [$this, 'doJob'], null, $timeout);
         }
 
         $start = time();
-        $maxRun = (int)$this->get("max_run_job");
+        $maxRun = $this->maxRunJobs;
 
         while (!$this->stopWork) {
             if (
@@ -233,9 +231,16 @@ class WorkerManager extends ManagerAbstracter
                     continue;
                 }
 
-                // no received anything jobs. sleep 5 seconds
-                if (!@$gmWorker->wait() && $gmWorker->returnCode() == GEARMAN_NO_ACTIVE_FDS) {
-                    sleep(5);
+                $this->debug('Waiting for next job...');
+
+                if (!@$gmWorker->wait()) {
+                    // no received anything jobs. sleep 5 seconds
+                    if ($gmWorker->returnCode() === GEARMAN_NO_ACTIVE_FDS) {
+                        sleep(5);
+                        continue;
+                    }
+
+                    break;
                 }
             }
 
@@ -247,7 +252,7 @@ class WorkerManager extends ManagerAbstracter
                 $this->stopWork = true;
             }
 
-            if ($maxRun >= self::MIN_HANDLE && $this->jobExecCount >= $maxRun) {
+            if ($this->jobExecCount >= $maxRun) {
                 $this->log("Ran $this->jobExecCount jobs which is over the maximum($maxRun), exiting and restart", self::LOG_WORKER_INFO);
                 $this->stopWork = true;
             }
