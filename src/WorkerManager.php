@@ -12,7 +12,7 @@ use GearmanJob;
 use GearmanWorker;
 
 /**
- * Class JobWorker
+ * Class WorkerManager
  * @package inhere\gearman
  */
 class WorkerManager extends ManagerAbstracter
@@ -30,10 +30,7 @@ class WorkerManager extends ManagerAbstracter
             for ($x = 0; $x < $num; $x++) {
                 $this->startWorker();
 
-                /*
-                 * Don't start workers too fast. They can overwhelm the
-                 * gearmand server and lead to connection timeouts.
-                 */
+                // Don't start workers too fast. They can overwhelm the gearmand server and lead to connection timeouts.
                 usleep(500000);
             }
 
@@ -58,10 +55,7 @@ class WorkerManager extends ManagerAbstracter
 
                 $workersCount[$job]++;
 
-                /*
-                 * Don't start workers too fast. They can overwhelm the
-                 * gearmand server and lead to connection timeouts.
-                 */
+                // Don't start workers too fast. They can overwhelm the gearmand server and lead to connection timeouts.
                 usleep(500000);
             }
         }
@@ -78,7 +72,8 @@ class WorkerManager extends ManagerAbstracter
      */
     protected function beginMonitor()
     {
-        $this->setProcessTitle("Manager process");
+        $this->setProcessTitle("pgm: Master process");
+        $this->log('Begin monitor check runtime status for children', self::LOG_DEBUG);
 
         // Main processing loop for the parent process
         while (!$this->stopWork || count($this->children)) {
@@ -146,7 +141,7 @@ class WorkerManager extends ManagerAbstracter
 
         switch ($pid) {
             case 0: // at children
-                $this->setProcessTitle("Worker process");
+                $this->setProcessTitle("pgm: Worker process");
 
                 $this->isParent = false;
                 $this->parentPid = $this->pid;
@@ -238,8 +233,9 @@ class WorkerManager extends ManagerAbstracter
                     continue;
                 }
 
+                // no received anything jobs. sleep 5 seconds
                 if (!@$gmWorker->wait() && $gmWorker->returnCode() == GEARMAN_NO_ACTIVE_FDS) {
-                    usleep(50000);
+                    sleep(5);
                 }
             }
 
@@ -260,24 +256,18 @@ class WorkerManager extends ManagerAbstracter
         $gmWorker->unregisterAll();
     }
 
-
     /**
      * Validates the PECL compatible worker files/functions
      */
     protected function validateDriverWorkers()
     {
         foreach ($this->handlers as $func => $props) {
-            require_once $props["path"];
-            $real_func = $func;
-
-            if (!function_exists($real_func) &&
-                (!class_exists($real_func) || !method_exists($real_func, "run"))) {
-                $this->log("Function $real_func not found in ".$props["path"]);
+            if (!function_exists($func) && (!class_exists($func) || !method_exists($func, "run"))) {
+                $this->log("Function $func not found in ".$props["path"]);
                 posix_kill($this->pid, SIGUSR2);
                 exit();
             }
         }
-
     }
 
     /**

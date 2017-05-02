@@ -260,8 +260,9 @@ abstract class ManagerAbstracter
 
         'conf_file' => '',
 
-        // auto load when 'loader_file' has been modify
-        'watch_modify' => 1,
+        // auto reload when 'loader_file' has been modify
+        'watch_modify' => true,
+        'watch_modify_interval' => 30, // seconds
 
         // handlers load file
         'loader_file' => '',
@@ -270,7 +271,7 @@ abstract class ManagerAbstracter
         'user' => '',
         'group' => '',
 
-        'as_daemon' => false,
+        'daemon' => false,
         'pid_file' => 'worker_manager.pid',
 
         // 需要 4 个 worker 处理所有的 job, 随机处理。
@@ -301,8 +302,9 @@ abstract class ManagerAbstracter
      */
     public function __construct(array $config = [])
     {
-        $this->pid = getmypid();
+        // $this->pid = getmypid();
         $this->setConfig($config);
+
         $this->init();
     }
 
@@ -325,7 +327,9 @@ abstract class ManagerAbstracter
      */
     public function start()
     {
-        $this->log("Started with pid {$this->pid}, Current script owner: " . get_current_user(), self::LOG_PROC_INFO);
+        $this->pid = getmypid();
+
+        $this->log("Started manager with pid {$this->pid}, Current script owner: " . get_current_user(), self::LOG_PROC_INFO);
 
         //$this->forkOwn('validateWorkers');
         $this->forkOwn();
@@ -340,7 +344,8 @@ abstract class ManagerAbstracter
     }
 
     /**
-     * @return $this
+     * handle CLI command and load options
+     * @return bool
      */
     protected function handleCliCommand()
     {
@@ -351,7 +356,13 @@ abstract class ManagerAbstracter
         $this->command = $command = isset($result[1]) ? $result[1] : 'start';
         unset($result[0], $result[1]);
 
-        // loadCliOptions
+        $supported = ['start' ,'stop', 'restart', 'reload', 'status'];
+
+        if (!in_array($command, $supported, true)) {
+            $this->showHelp("The command [{$command}] is don't supported!");
+        }
+
+        // load CLI Options
         $this->loadCliOptions($result);
 
         // init Config
@@ -367,13 +378,12 @@ abstract class ManagerAbstracter
 
         // start: do Start Server
         if ($command === 'start') {
-
             // check master process is running
             if ($isRunning) {
                 $this->stdout("The worker manager has been running. (PID:{$pid})", true, -__LINE__);
             }
 
-            return $this;
+            return true;
         }
 
         // check master process
@@ -400,7 +410,7 @@ abstract class ManagerAbstracter
                 break;
         }
 
-        return $this;
+        return true;
     }
 
     /**
@@ -413,7 +423,7 @@ abstract class ManagerAbstracter
             'c' => 'conf_file',   // config file
             's' => 'servers', // server address
 
-            'd' => 'as_daemon',   // run in the background
+            'd' => 'daemon',   // run in the background
             'n' => 'worker_num',  // worker number do all jobs
             'u' => 'user',
             'g' => 'group',
@@ -485,6 +495,8 @@ abstract class ManagerAbstracter
         $this->config['max_lifetime'] = (int)$config['max_lifetime'];
         $this->config['restart_splay'] = (int)$config['restart_splay'];
         $this->config['timeout'] = (int)$config['timeout'];
+        $this->config['watch_modify'] = (bool)$config['watch_modify'];
+        $this->config['watch_modify_interval'] = (int)$config['watch_modify_interval'];
 
         if ($this->config['worker_num'] <= 0) {
             $this->config['worker_num'] = 1;
@@ -502,11 +514,16 @@ abstract class ManagerAbstracter
             $this->config['timeout'] = 300;
         }
 
-        $this->doAllWorkers = $config['worker_num'];
-        $this->maxLifetime = $config['max_lifetime'];
-        $this->daemon = (bool)$config['as_daemon'];
-        $this->verbose = (int)$config['log_level'];
-        $this->pidFile = trim($this->config['pid_file']);
+        if ($this->config['watch_modify_interval'] <= 10) {
+            $this->config['watch_modify_interval'] = 30;
+        }
+
+        $this->doAllWorkers = $this->config['worker_num'];
+        $this->maxLifetime = $this->config['max_lifetime'];
+        $this->watchModify = (bool)$this->config['watch_modify'];
+        $this->daemon = (bool)$this->config['daemon'];
+        $this->verbose = (int)$this->config['log_level'];
+        $this->pidFile = trim($config['pid_file']);
 
     }
 
@@ -521,15 +538,17 @@ abstract class ManagerAbstracter
             $this->quit();
         }
 
-        $this->validateDriverWorkers();
+        // $this->validateDriverWorkers();
 
         // Since we got here, all must be ok, send a CONTINUE
         $this->log("Helper is running. Sending SIGCONT(continue) to $this->parentPid.", self::LOG_DEBUG);
         posix_kill($this->parentPid, SIGCONT);
 
         if ($this->watchModify && ($loaderFile = $this->config['loader_file'])) {
-            $this->log("Running loop to check modify for 'loader_file': $loaderFile", self::LOG_DEBUG);
             $lastCheckTime = 0;
+            $checkInterval = $this->config['watch_modify_interval'];
+
+            $this->log("Running loop to watch modify(interval:{$checkInterval}s) for 'loader_file': $loaderFile", self::LOG_DEBUG);
 
             while (true) {
                 $maxTime = 0;
@@ -537,7 +556,7 @@ abstract class ManagerAbstracter
                 $mdfTime = filemtime($loaderFile);
                 $maxTime = max($maxTime, $mdfTime);
 
-                $this->log("{$loaderFile} - $mdfTime $lastCheckTime", self::LOG_DEBUG);
+                $this->log("{$loaderFile} - MODIFY $mdfTime,LAST CHECK $lastCheckTime", self::LOG_DEBUG);
 
                 if ($lastCheckTime !== 0 && $mdfTime > $lastCheckTime) {
                     $this->log("New code modify found. Sending SIGHUP(reload) to $this->parentPid", self::LOG_PROC_INFO);
@@ -546,7 +565,7 @@ abstract class ManagerAbstracter
                 }
 
                 $lastCheckTime = $maxTime;
-                sleep(5);
+                sleep($checkInterval);
             }
         } else {
             $this->quit();
@@ -567,7 +586,7 @@ abstract class ManagerAbstracter
 
         switch ($pid) {
             case 0: // at children(helper process)
-                $this->setProcessTitle("Helper process");
+                $this->setProcessTitle("pgm: Helper process");
                 $this->isParent = false;
                 $this->parentPid = $this->pid;
                 $this->pid = getmypid();
@@ -607,7 +626,7 @@ abstract class ManagerAbstracter
         }
 
         // If we want run as daemon, fork here and exit
-        if ($this->config['as_daemon']) {
+        if ($this->config['daemon']) {
             $this->runAsDaemon();
         }
 
@@ -812,9 +831,15 @@ abstract class ManagerAbstracter
     /**
      * Stops all running children
      * @param int $signal
+     * @return bool
      */
     protected function stopChildren($signal = SIGTERM)
     {
+        if (!$this->children) {
+            $this->log('No children need to stop', self::LOG_PROC_INFO);
+            return false;
+        }
+
         $this->log('Stopping children ... ...', self::LOG_PROC_INFO);
 
         foreach ($this->children as $pid => $child) {
@@ -824,6 +849,8 @@ abstract class ManagerAbstracter
         }
 
         $this->log('Children Stopped', self::LOG_PROC_INFO);
+
+        return true;
     }
 
     /**
@@ -1243,33 +1270,33 @@ abstract class ManagerAbstracter
 Gearman worker manager script tool. Version $version
 
 USAGE:
-  # $script -h | -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-a] [-p PID_FILE] {COMMAND}
+  $script -h | -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-a] [-p PID_FILE] {COMMAND}
 
 COMMANDS:
   start         Start gearman worker manager
-  stop          Stop gearman worker manager 
+  stop          Stop gearman worker manager
   restart       Restart gearman worker manager
   status        Get gearman worker manager runtime status
 
 OPTIONS:
-  -a             Automatically check for new worker code
+  -a             Automatically check and reload when 'loader_file' has been modify
   -c CONFIG      Worker configuration file
   -s HOST[:PORT] Connect to server HOST and optional PORT
-  
+
   -d             Daemon, detach and run in the background
   -n NUMBER      Start NUMBER workers that do all jobs
   -u USERNAME    Run workers as USERNAME
   -g GROUP_NAME  Run workers as user's GROUP NAME
-  
+
   -l LOG_FILE    Log output to LOG_FILE or use keyword 'syslog' for syslog support
   -p PID_FILE    File to write process ID out to
 
   -r NUMBER      Maximum job iterations per worker
   -x SECONDS     Maximum seconds for a worker to live
   -t SECONDS     Maximum number of seconds gearmand server should wait for a worker to complete work before timing out and reissuing work to another worker.
-  
+
   -v LEVEL       Increase verbosity level by one. eg: -v vv
-  
+
   -h,--help      Shows this help
   -V             Display the version of the manager
   -Z             Parse the command line and config file then dump it to the screen and exit.\n
@@ -1374,15 +1401,14 @@ EOF;
         $data = $data ? json_encode($data) : '';
 
         if ($this->get('log_syslog')) {
-            return $this->sysLog($msg . $data, $level);
+            return $this->sysLog($msg . ' ' . $data, $level);
         }
 
         $label = isset(self::$levels[$level]) ? self::$levels[$level] : self::LOG_INFO;
 
-        list(, $ms) = explode('.', sprintf('%f', microtime(true)));
-        $ds = date('y-m-d H:i:s') . '.' . str_pad($ms, 6, 0);
-
-        $logString = sprintf('[%s] [%d] [%s] %s %s' . PHP_EOL, $ds, $this->pid, $label, trim($msg), $data);
+        list($ts, $ms) = explode('.', sprintf('%f', microtime(true)));
+        $ds = date('y-m-d H:i:s', $ts) . '.' . str_pad($ms, 6, 0);
+        $logString = sprintf('[%s] [PID:%d] [%s] %s %s' . PHP_EOL, $ds, $this->pid, $label, trim($msg), $data);
 
         // if not in daemon, print log to \STDOUT
         if (!$this->isDaemon()) {
@@ -1495,6 +1521,8 @@ EOF;
     {
         if ($this->isParent) {
             $this->delPidFile();
+
+            $this->log('Stopping children trigger by __destruct()', self::LOG_PROC_INFO);
 
             // stop children processes
             $this->stopChildren();

@@ -13,24 +13,17 @@ require __DIR__ . '/simple-loader.php';
 date_default_timezone_set('Asia/Shanghai');
 
 $config = [
-    'as_daemon' => false,
+    'daemon' => false,
+    'pid_file' => __DIR__ . '/manager.pid',
+
     'log_level' => WorkerManager::LOG_DEBUG,
     'log_file' => __DIR__ . '/workers.log',
-    'pid_file' => __DIR__ . '/manager.pid',
+
+    'loader_file' => __DIR__ . '/job_handlers.php',
 ];
 
 $worker = new WorkerManager($config);
 
-$worker->addHandler('reverse_string', function ($string, \GearmanJob $job)
-{
-    echo "Received job: " . $job->handle() . "\n";
-    echo "Workload: $string\n";
-
-    $result = strrev($string);
-
-    echo "Result: $result\n";
-
-    return $result;
-});
+require __DIR__ . '/job_handlers.php';
 
 $worker->start();
