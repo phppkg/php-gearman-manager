@@ -8,7 +8,6 @@
 
 use \inhere\gearman\WorkerManager;
 
-declare(ticks = 1);
 error_reporting(E_ALL | E_STRICT);
 
 require __DIR__ . '/simple-loader.php';

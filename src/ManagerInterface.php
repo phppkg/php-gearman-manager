@@ -21,8 +21,13 @@ interface ManagerInterface
      */
     const EVENT_BEFORE_PUSH = 'beforePush';
     const EVENT_AFTER_PUSH = 'afterPush';
+
+    const EVENT_WORKER_START = 'workerStart';
+    const EVENT_WORKER_EXIT = 'workerExit';
+
     const EVENT_BEFORE_WORK = 'beforeWork';
     const EVENT_AFTER_WORK = 'afterWork';
+
     const EVENT_AFTER_ERROR = 'afterError';
 
     /**
@@ -62,6 +67,15 @@ interface ManagerInterface
     const MAX_RUN_JOBS = 2000;
     const RESTART_SPLAY = 600;
     const WATCH_INTERVAL = 30;
+
+    /**
+     * process exit status code.
+     */
+    const CODE_MANUAL_KILLED = -500;
+    const CODE_NORMAL_EXITED = 0;
+    const CODE_CONNECT_ERROR = 170;
+    const CODE_NO_HANDLERS   = 171;
+    const CODE_UNKNOWN_ERROR = 180;
 
     /**
      * do run manager
