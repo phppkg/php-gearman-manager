@@ -222,7 +222,7 @@ abstract class ManagerAbstracter implements ManagerInterface
 
         // auto reload when 'loader_file' has been modify
         'watch_modify' => true,
-        'watch_modify_interval' => 30, // seconds
+        'watch_modify_interval' => 300, // seconds
 
         // handlers load file
         'loader_file' => '',
@@ -533,7 +533,7 @@ abstract class ManagerAbstracter implements ManagerInterface
         // start worker monitor
         $this->startWorkerMonitor();
 
-        $this->log('Exiting ... ...');
+        $this->log('Stopping ... ...', self::LOG_PROC_INFO);
     }
 
     /**
@@ -1001,9 +1001,8 @@ abstract class ManagerAbstracter implements ManagerInterface
             Helper::killProcess($pid, $signal, 2);
         }
 
-        $this->log('All children stopped', self::LOG_PROC_INFO);
-
-        //$this->children = [];
+        // $this->log('All children stopped', self::LOG_PROC_INFO);
+        // $this->children = [];
 
         return true;
     }
@@ -1705,6 +1704,7 @@ EOF;
                 $this->logFileHandle = null;
             }
 
+            $this->log("Stopped\n", self::LOG_PROC_INFO);
             // helper or worker
         } else {
             $this->config = $this->_events = $this->handlers = [];

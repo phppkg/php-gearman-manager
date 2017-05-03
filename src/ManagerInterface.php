@@ -54,9 +54,9 @@ interface ManagerInterface
     const DO_ALL = 'all';
 
     const MIN_LIFETIME = 1800;
-    const MIN_RUN_JOBS = 100;
+    const MIN_RUN_JOBS = 200;
     const MIN_JOB_TIMEOUT = 10;
-    const MIN_WATCH_INTERVAL = 10;
+    const MIN_WATCH_INTERVAL = 120;
 
     /**
      * some default values
@@ -66,7 +66,7 @@ interface ManagerInterface
     const MAX_LIFETIME = 3600;
     const MAX_RUN_JOBS = 2000;
     const RESTART_SPLAY = 600;
-    const WATCH_INTERVAL = 30;
+    const WATCH_INTERVAL = 300;
 
     /**
      * process exit status code.
