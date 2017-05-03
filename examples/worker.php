@@ -6,7 +6,6 @@
  * Time: 下午9:26
  */
 
-
 use \inhere\gearman\WorkerManager;
 
 declare(ticks = 1);

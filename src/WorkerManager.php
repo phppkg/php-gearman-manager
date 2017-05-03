@@ -231,7 +231,7 @@ class WorkerManager extends ManagerAbstracter
                     continue;
                 }
 
-                $this->debug('Waiting for next job...');
+                $this->log('Waiting for next job...', self::LOG_CRAZY);
 
                 if (!@$gmWorker->wait()) {
                     // no received anything jobs. sleep 5 seconds

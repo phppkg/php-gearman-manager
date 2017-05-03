@@ -48,7 +48,7 @@ abstract class ManagerAbstracter implements ManagerInterface
     /**
      * @var bool
      */
-    protected $isParent = true;
+    protected $isParent = false;
 
     /**
      * @var bool
@@ -270,8 +270,8 @@ abstract class ManagerAbstracter implements ManagerInterface
      */
     protected function init()
     {
-        // handleCliCommand
-        $this->handleCliCommand();
+        // handleCommandAndConfig
+        $this->handleCommandAndConfig();
 
         // $this->debug("Start gearman worker, connection to the gearman server {$host}:{$port}");
     }
@@ -280,10 +280,10 @@ abstract class ManagerAbstracter implements ManagerInterface
      * handle CLI command and load options
      * @return bool
      */
-    protected function handleCliCommand()
+    protected function handleCommandAndConfig()
     {
         $result = Helper::parseParameters([
-            'w', 'h', 'V', 'help', 'version'
+            'd', 'daemon', 'w', 'watch', 'h', 'help', 'V', 'version'
         ]);
         $this->script = $result[0];
         $this->command = $command = isset($result[1]) ? $result[1] : 'start';
@@ -302,8 +302,8 @@ abstract class ManagerAbstracter implements ManagerInterface
         $this->initConfig($this->config);
 
         // Debug option to dump the config and exit
-        if (isset($result['D'])) {
-            $this->dumpInfo($result['D'] === 'all');
+        if (isset($result['dump'])) {
+            $this->dumpInfo($result['dump'] === 'all');
         }
 
         $pid = $this->getPidFromFile($this->pidFile);
@@ -313,7 +313,7 @@ abstract class ManagerAbstracter implements ManagerInterface
         if ($command === 'start') {
             // check master process is running
             if ($isRunning) {
-                $this->stdout("The worker manager has been running. (PID:{$pid})", true, -__LINE__);
+                $this->stdout("ERROR: The worker manager has been running. (PID:{$pid})\n", true, -__LINE__);
             }
 
             return true;
@@ -321,7 +321,7 @@ abstract class ManagerAbstracter implements ManagerInterface
 
         // check master process
         if (!$isRunning) {
-            $this->stdout('The worker manager is not running. can not ' . $command, true, -__LINE__);
+            $this->stdout("ERROR: The worker manager is not running. can not execute the command: {$command}\n", true, -__LINE__);
         }
 
         // switch command
@@ -356,7 +356,6 @@ abstract class ManagerAbstracter implements ManagerInterface
             'c' => 'conf_file',   // config file
             's' => 'servers', // server address
 
-            'd' => 'daemon',   // run in the background
             'n' => 'worker_num',  // worker number do all jobs
             'u' => 'user',
             'g' => 'group',
@@ -396,13 +395,22 @@ abstract class ManagerAbstracter implements ManagerInterface
             }
         }
 
-        if (isset($opts['w'])) {
+        // watch modify
+        if (isset($opts['w']) || isset($opts['watch'])) {
             $this->config['watch_modify'] = $opts['w'];
         }
 
+        // run as daemon
+        if (isset($opts['d']) || isset($opts['daemon'])) {
+            $this->config['daemon'] = true;
+        }
+
         if (isset($opts['v'])) {
+            $opts['v'] = $opts['v'] === true ? '' : $opts['v'];
+
             switch ($opts['v']) {
                 case true:
+                var_dump($opts['v'],self::LOG_CRAZY,$this->config['log_level']);
                     $this->config['log_level'] = self::LOG_INFO;
                     break;
                 case 'v':
@@ -418,6 +426,7 @@ abstract class ManagerAbstracter implements ManagerInterface
                     $this->config['log_level'] = self::LOG_CRAZY;
                     break;
                 default:
+                    // $this->config['log_level'] = self::LOG_INFO;
                     break;
             }
         }
@@ -490,10 +499,17 @@ abstract class ManagerAbstracter implements ManagerInterface
     {
         // check
         if (!$this->handlers) {
-            $this->stdout("ERROR: No jobs handler found. please less register one.");
+            $this->stdout("ERROR: No jobs handler found. please less register one.\n");
             posix_kill($this->pid, SIGUSR1);
             $this->quit();
         }
+
+        // 不能直接将属性 isParent 定义为 True
+        // 这会导致启动后，在执行任意命令时都会删除 pid 文件(触发了__destruct)
+        $this->isParent = true;
+
+        // prepare something for start
+        $this->prepare();
 
         // Register signal listeners
         $this->registerSignals();
@@ -504,9 +520,6 @@ abstract class ManagerAbstracter implements ManagerInterface
 
         $this->log("Started manager with pid {$this->pid}, Current script owner: " . get_current_user(), self::LOG_PROC_INFO);
 
-        // prepare something for start
-        $this->prepare();
-
         // start workers and set up a running environment
         $this->startWorkers();
 
@@ -514,6 +527,56 @@ abstract class ManagerAbstracter implements ManagerInterface
         $this->startWorkerMonitor();
 
         $this->log('Exiting ... ...');
+    }
+
+    /**
+     * prepare start
+     */
+    protected function prepare()
+    {
+        // If we want run as daemon, fork here and exit
+        if ($this->daemon) {
+            $this->log("Run the worker manager in the background", self::LOG_PROC_INFO);
+            $this->runAsDaemon();
+        }
+
+        if ($this->pidFile && !file_put_contents($this->pidFile, $this->pid)) {
+            $this->showHelp("Unable to write PID to the file {$this->pidFile}");
+        }
+
+        if ($logFile = $this->config['log_file']) {
+            if ($logFile === 'syslog') {
+                $this->config['log_syslog'] = true;
+                $this->config['log_file'] = $logFile = '';
+            } else {
+                $this->openLogFile();
+            }
+        }
+
+        if ($username = $this->config['user']) {
+            $user = posix_getpwnam($username);
+
+            if (!$user || !isset($user['uid'])) {
+                $this->showHelp("User ({$username}) not found.");
+            }
+
+            // Ensure new uid can read/write pid and log files
+            if ($this->pidFile && !chown($this->pidFile, $user['uid'])) {
+                $this->log("Unable to chown PID file to {$username}", self::LOG_ERROR);
+            }
+
+            if ($this->logFileHandle && !chown($logFile, $user['uid'])) {
+                $this->log("Unable to chown log file to {$username}", self::LOG_ERROR);
+            }
+
+            posix_setuid($user['uid']);
+
+            if (posix_geteuid() !== (int)$user['uid']) {
+                $this->showHelp("Unable to change user to {$username} (UID: {$user['uid']}).");
+            }
+
+            $this->log("User set to {$username}", self::LOG_PROC_INFO);
+        }
     }
 
     /**
@@ -603,55 +666,6 @@ abstract class ManagerAbstracter implements ManagerInterface
             }
         } else {
             $this->quit();
-        }
-    }
-
-    /**
-     * prepare start
-     */
-    protected function prepare()
-    {
-        if ($this->pidFile && !file_put_contents($this->pidFile, $this->pid)) {
-            $this->showHelp("Unable to write PID to the file {$this->pidFile}");
-        }
-
-        // If we want run as daemon, fork here and exit
-        if ($this->config['daemon']) {
-            $this->runAsDaemon();
-        }
-
-        if ($logFile = $this->config['log_file']) {
-            if ($logFile === 'syslog') {
-                $this->config['log_syslog'] = true;
-                $this->config['log_file'] = $logFile = '';
-            } else {
-                $this->openLogFile();
-            }
-        }
-
-        if ($username = $this->config['user']) {
-            $user = posix_getpwnam($username);
-
-            if (!$user || !isset($user['uid'])) {
-                $this->showHelp("User ({$username}) not found.");
-            }
-
-            // Ensure new uid can read/write pid and log files
-            if ($this->pidFile && !chown($this->pidFile, $user['uid'])) {
-                $this->log("Unable to chown PID file to {$username}", self::LOG_ERROR);
-            }
-
-            if ($this->logFileHandle && !chown($logFile, $user['uid'])) {
-                $this->log("Unable to chown log file to {$username}", self::LOG_ERROR);
-            }
-
-            posix_setuid($user['uid']);
-
-            if (posix_geteuid() !== (int)$user['uid']) {
-                $this->showHelp("Unable to change user to {$username} (UID: {$user['uid']}).");
-            }
-
-            $this->log("User set to {$username}", self::LOG_PROC_INFO);
         }
     }
 
@@ -800,20 +814,16 @@ abstract class ManagerAbstracter implements ManagerInterface
      */
     protected function stop($pid, $quit = true)
     {
-        $this->log("The manager process(PID:$pid) stopping ...");
+        $this->stdout("The manager process(PID:$pid) stopping ...");
 
         // do stop
         // 向主进程发送此信号(SIGTERM)服务器将安全终止；也可在PHP代码中调用`$server->shutdown()` 完成此操作
         if (!Helper::killProcess($pid, SIGTERM)) {
-            $this->log("Stop the manager process(PID:$pid) failed!", self::LOG_ERROR);
-        }
-
-        if ($this->pidFile && file_exists($this->pidFile)) {
-            unlink($this->pidFile);
+            $this->stdout("Stop the manager process(PID:$pid) failed!", self::LOG_ERROR);
         }
 
         // stop success
-        $this->log("The manager process(PID:$pid) stopped.");
+        $this->stdout("The manager process(PID:$pid) stopped.");
 
         $quit && $this->quit();
     }
@@ -853,6 +863,7 @@ abstract class ManagerAbstracter implements ManagerInterface
         $pid = pcntl_fork();
 
         if ($pid > 0) {
+            // disable trigger stop event in the __destruct()
             $this->isParent = false;
             $this->quit();
         }
@@ -1054,7 +1065,7 @@ abstract class ManagerAbstracter implements ManagerInterface
     protected function getPidFromFile($pidFile)
     {
         if ($pidFile && file_exists($pidFile)) {
-            return (int)file_get_contents($pidFile);
+            return (int)trim(file_get_contents($pidFile));
         }
 
         return 0;
@@ -1269,38 +1280,38 @@ abstract class ManagerAbstracter implements ManagerInterface
 Gearman worker manager script tool. Version $version
 
 USAGE:
-  $script {COMMAND} -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-a] [-p PID_FILE]
+  $script {COMMAND} -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-w] [-p PID_FILE]
   $script -h
 
 COMMANDS:
-  start         Start gearman worker manager(default command)
-  stop          Stop gearman worker manager
-  restart       Restart gearman worker manager
-  reload        Reload gearman worker manager(alias of 'restart')
-  status        Get gearman worker manager runtime status
+  start             Start gearman worker manager(default command)
+  stop              Stop gearman worker manager
+  restart           Restart gearman worker manager
+  reload            Reload gearman worker manager(alias of 'restart')
+  status            Get gearman worker manager runtime status
 
 OPTIONS:
-  -a             Automatically check and reload when 'loader_file' has been modify
-  -c CONFIG      Worker configuration file
-  -s HOST[:PORT] Connect to server HOST and optional PORT
+  -c CONFIG          Worker configuration file
+  -s HOST[:PORT]     Connect to server HOST and optional PORT
 
-  -d             Daemon, detach and run in the background
-  -n NUMBER      Start NUMBER workers that do all jobs
-  -u USERNAME    Run workers as USERNAME
-  -g GROUP_NAME  Run workers as user's GROUP NAME
+  -n NUMBER          Start NUMBER workers that do all jobs
+  -u USERNAME        Run workers as USERNAME
+  -g GROUP_NAME      Run workers as user's GROUP NAME
 
-  -l LOG_FILE    Log output to LOG_FILE or use keyword 'syslog' for syslog support
-  -p PID_FILE    File to write process ID out to
+  -l LOG_FILE        Log output to LOG_FILE or use keyword 'syslog' for syslog support
+  -p PID_FILE        File to write process ID out to
 
-  -r NUMBER      Maximum job iterations per worker
-  -x SECONDS     Maximum seconds for a worker to live
-  -t SECONDS     Maximum number of seconds gearmand server should wait for a worker to complete work before timing out and reissuing work to another worker.
+  -r NUMBER          Maximum run job iterations per worker
+  -x SECONDS         Maximum seconds for a worker to live
+  -t SECONDS         Number of seconds gearmand server should wait for a worker to complete work before timing out
 
-  -v LEVEL       Increase verbosity level by one. eg: -v vv
+  -v LEVEL           Increase verbosity level by one. eg: -v vv | -v vvv
 
-  -h,--help      Shows this help
-  -V,--version   Display the version of the manager
-  -D             Parse the command line and config file then dump it to the screen and exit.\n
+  -w,--watch         Automatically watch and reload when 'loader_file' has been modify
+  -d,--daemon        Daemon, detach and run in the background
+  -h,--help          Shows this help information
+  -V,--version       Display the version of the manager
+     --dump [all]    Parse the command line and config file then dump it to the screen and exit.\n\n
 EOF;
         exit(0);
     }
@@ -1476,7 +1487,7 @@ EOF;
         }
 
         if (!$ret = syslog($priority, $msg)) {
-            $this->stdout("Unable to write to syslog\n");
+            $this->stdout("ERROR: Unable to write to syslog\n");
         }
 
         return $ret;
@@ -1509,17 +1520,16 @@ EOF;
     {
         if ($this->isParent) {
             if ($pid = $this->helperPid) {
-                $this->log("Stopping helper(PID:$pid) trigger by __destruct()", self::LOG_PROC_INFO);
-                Helper::killProcess($pid);
+                $this->log("Stopping helper(PID:$pid) trigger by " . __METHOD__, self::LOG_PROC_INFO);
+                Helper::killProcess($pid, SIGKILL);
             }
 
             // delPidFile
             $this->delPidFile();
 
-            $this->log('Stopping children trigger by __destruct()', self::LOG_PROC_INFO);
-
             // stop children processes
             if ($this->children) {
+                $this->log('Stopping children trigger by ' . __METHOD__, self::LOG_PROC_INFO);
                 $this->stopChildren();
             }
 

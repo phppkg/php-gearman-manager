@@ -71,7 +71,7 @@ class JobClient
     {
         $properties = ['enable', 'servers', 'serializer'];
 
-        foreach ($properties as $property => $value) {
+        foreach ($properties as $property) {
             if (isset($config[$property])) {
                 $this->$property = $config[$property];
             }
@@ -89,12 +89,22 @@ class JobClient
             return false;
         }
 
-        $client = new \GearmanClient();
+        try {
+            $client = new \GearmanClient();
 
-        if ($servers = implode(',', (array)$this->servers)) {
-            $client->addServers($servers);
-        } else {
-            $client->addServer();
+            if ($servers = implode(',', (array)$this->servers)) {
+                $this->stdout("connect to the servers {$servers}");
+                $client->addServers($servers);
+            } else {
+                $this->stdout("connect to the default server 127.0.0.1:4730");
+                $client->addServer();
+            }
+        } catch (\Exception $e) {
+            $this->stdout("connect to the gearmand server error: {$e->getMessage()}", true, -500);
+        }
+
+        if ($er = $client->error()) {
+            $this->stdout("connect to the gearmand server error: {$er}", true, -500);
         }
 
         $this->enable = true;
@@ -125,6 +135,8 @@ class JobClient
                 $workload = serialize($workload);
             }
         }
+
+        $this->stdout("push a job to the server.Job: $funcName Type: $clientMethod Data: $workload");
 
         $ret = $this->client->$clientMethod($funcName, $workload, $unique);
 
@@ -195,5 +207,21 @@ class JobClient
         }
 
         throw new \RuntimeException('Calling unknown method: ' . get_class($this) . "::$name()");
+    }
+
+    /**
+     * Logs data to stdout
+     * @param string $logString
+     * @param bool $nl
+     * @param bool|int $quit
+     */
+    protected function stdout($logString, $nl = true, $quit = false)
+    {
+        fwrite(\STDOUT, $logString . ($nl ? PHP_EOL : ''));
+
+        if (($isTrue = true === $quit) || is_int($quit)) {
+            $code = $isTrue ? 0 : $quit;
+            exit($code);
+        }
     }
 }
