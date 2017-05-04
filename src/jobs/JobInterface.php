@@ -6,20 +6,19 @@
  * Time: 16:06
  */
 
-namespace inhere\gearman;
+namespace inhere\gearman\jobs;
 
 /**
  * Class JobInterface
- * @package inhere\gearman
+ * @package inhere\gearman\jobs
  */
 interface JobInterface
 {
     /**
      * do the job
      * @param string $workload
-     * @param WorkerManager $manger
      * @param \GearmanJob $job
      * @return mixed
      */
-    public function run($workload, WorkerManager $manger, \GearmanJob $job);
+    public function run($workload, \GearmanJob $job);
 }

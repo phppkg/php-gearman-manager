@@ -10,6 +10,7 @@ namespace inhere\gearman;
 
 use GearmanJob;
 use GearmanWorker;
+use inhere\gearman\jobs\JobInterface;
 
 /**
  * Class WorkerManager

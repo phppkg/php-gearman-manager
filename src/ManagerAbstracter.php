@@ -10,6 +10,8 @@ declare(ticks = 1);
 
 namespace inhere\gearman;
 
+use inhere\gearman\jobs\JobInterface;
+
 /**
  * Class ManagerAbstracter
  * @package inhere\gearman

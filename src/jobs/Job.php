@@ -6,11 +6,11 @@
  * Time: 16:06
  */
 
-namespace inhere\gearman;
+namespace inhere\gearman\jobs;
 
 /**
  * Class Job
- * @package inhere\gearman
+ * @package inhere\gearman\jobs
  */
 abstract class Job implements JobInterface
 {
