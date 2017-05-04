@@ -4,6 +4,7 @@
  * User: inhere
  * Date: 2017/4/28
  * Time: 下午9:26
+ * gearman worker manager
  */
 
 use \inhere\gearman\WorkerManager;
@@ -24,8 +25,11 @@ $config = [
     'loader_file' => __DIR__ . '/job_handlers.php',
 ];
 
-$worker = new WorkerManager($config);
+$mgr = new WorkerManager($config);
 
-require __DIR__ . '/job_handlers.php';
+$mgr->setHandlersLoader(function (WorkerManager $mgr)
+{
+    require __DIR__ . '/job_handlers.php';
+});
 
-$worker->start();
+$mgr->start();

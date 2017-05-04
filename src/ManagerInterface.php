@@ -51,7 +51,7 @@ interface ManagerInterface
     const LOG_CRAZY = 8;
 
 
-    const DO_ALL = 'all';
+    const DO_ALL = '__all__';
 
     const MIN_LIFETIME = 1800;
     const MIN_RUN_JOBS = 200;

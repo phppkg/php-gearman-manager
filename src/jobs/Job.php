@@ -22,11 +22,10 @@ abstract class Job implements JobInterface
     /**
      * do the job
      * @param string $workload
-     * @param WorkerManager $manger
      * @param \GearmanJob $job
      * @return mixed
      */
-    abstract public function run($workload, WorkerManager $manger, \GearmanJob $job);
+    abstract public function run($workload, \GearmanJob $job);
 
     /**
      * @param mixed $context

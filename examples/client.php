@@ -38,9 +38,13 @@ $client = new \inhere\gearman\client\JobClient([
     'servers' => isset($opts['s']) ? $opts['s'] : (isset($opts['server']) ? $opts['server'] : ''),
 ]);
 
-// $ret[] = $client->doNormal('reverse_string', 'hello a');
+$ret[] = $client->doNormal('reverse_string', 'hello a');
 $ret[] = $client->doBackground('reverse_string', 'hello b');
 $ret[] = $client->doBackground('reverse_string', 'hello c');
 $ret[] = $client->doHighBackground('reverse_string', 'hello d');
+
+$ret[] = $client->doBackground('test_echo', 'hello welcome');
+
+$ret[] = $client->doBackground('echo_job', 'hello welcome!!');
 
 var_dump($ret);

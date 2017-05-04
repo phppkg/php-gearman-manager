@@ -174,11 +174,11 @@ class WorkerManager extends ManagerAbstracter
             if ($handler instanceof JobInterface) {
                 $jobClass = get_class($handler);
                 $this->log("($h) Calling Job object handler($jobClass) do the job: $name.", self::LOG_WORKER_INFO);
-                $ret = $handler->run($job->workload(), $job);
+                $ret = $handler->run($job->workload(), $job, $this);
             } else {
                 $jobFunc = is_string($handler) ? $handler : 'Closure';
                 $this->log("($h) Calling function handler($jobFunc) do the job: $name.", self::LOG_WORKER_INFO);
-                $ret = $handler($job->workload(), $job);
+                $ret = $handler($job->workload(), $job, $this);
             }
         } catch (\Exception $e) {
             $this->log("($h) Failed to do the job: $name. Error: " . $e->getMessage(), self::LOG_ERROR);
