@@ -12,3 +12,7 @@ $worker->addHandler('reverse_string', function ($string, \GearmanJob $job)
 
     return $result;
 });
+
+$worker->addHandler('test_echo', function ($str) {
+   echo $str;
+});

@@ -27,15 +27,16 @@ class WorkerManager extends ManagerAbstracter
      */
     protected function startDriverWorker(array $jobs, array $timeouts = [])
     {
+        $wkrTimeout = 5;
         $gmWorker = new GearmanWorker();
         // 设置非阻塞式运行
         $gmWorker->addOptions(GEARMAN_WORKER_NON_BLOCKING);
-        $gmWorker->setTimeout(5000);
+        $gmWorker->setTimeout($wkrTimeout * 1000); // 5s
 
-        $this->debug("The Gearman worker started(PID:{$this->pid})");
+        $this->debug("The gearman worker started");
 
         foreach ($this->getServers() as $s) {
-            $this->log("Adding server $s", self::LOG_WORKER_INFO);
+            $this->log("Adding a job server: $s", self::LOG_WORKER_INFO);
 
             // see: https://bugs.php.net/bug.php?id=63041
             try {
@@ -45,14 +46,6 @@ class WorkerManager extends ManagerAbstracter
                     $this->stopWork = true;
                     throw $e;
                 }
-            }
-
-            // test server
-            if (!@$gmWorker->echo('echo')) {
-                $this->log("Failed connect to the server: $s");
-                $this->stopWork = true;
-
-                return self::CODE_CONNECT_ERROR;
             }
         }
 
@@ -68,22 +61,35 @@ class WorkerManager extends ManagerAbstracter
         while (!$this->stopWork) {
             if (
                 @$gmWorker->work() ||
-                $gmWorker->returnCode() === GEARMAN_IO_WAIT ||
-                $gmWorker->returnCode() === GEARMAN_NO_JOBS
+                $gmWorker->returnCode() === GEARMAN_IO_WAIT ||  // code: 1
+                $gmWorker->returnCode() === GEARMAN_NO_JOBS     // code: 35
             ) {
-                if ($gmWorker->returnCode() === GEARMAN_SUCCESS) {
+                if ($gmWorker->returnCode() === GEARMAN_SUCCESS) { // code 0
                     continue;
                 }
 
-                $this->log('Waiting for next job...', self::LOG_CRAZY);
+                // no received anything jobs. sleep 5 seconds
+                if ($gmWorker->returnCode() === GEARMAN_NO_JOBS) {
+                    $this->log('No received anything job.(sleep 5s)', self::LOG_CRAZY);
+                    sleep(5);
+                    continue;
+                }
 
-                if (!@$gmWorker->wait()) {
-                    // no received anything jobs. sleep 5 seconds
-                    if ($gmWorker->returnCode() === GEARMAN_NO_ACTIVE_FDS) {
+                // if (!@$gmWorker->wait()) {
+                if (!$gmWorker->wait()) {
+                    // GearmanWorker was called with no connections.
+                    if ($gmWorker->returnCode() === GEARMAN_NO_ACTIVE_FDS) { // code: 7
+                        $this->log('We are not connected to any servers, so wait a bit before trying to reconnect.(sleep 5s)', self::LOG_CRAZY);
                         sleep(5);
                         continue;
                     }
 
+                    if ($gmWorker->returnCode() === GEARMAN_TIMEOUT) { // code: 47
+                        $this->log("Timeout({$wkrTimeout}s). Waiting for next job...", self::LOG_CRAZY);
+                        continue;
+                    }
+
+                    $this->log("Worker Error: {$gmWorker->error()}", self::LOG_DEBUG);
                     break;
                 }
             }
@@ -111,9 +117,6 @@ class WorkerManager extends ManagerAbstracter
     protected function validateDriverWorkers()
     {
         $gmWorker = new GearmanWorker();
-
-        // 设置非阻塞式运行
-        $gmWorker->addOptions(GEARMAN_WORKER_NON_BLOCKING);
         $gmWorker->setTimeout(5000);
 
         foreach ($this->getServers() as $s) {
@@ -129,17 +132,17 @@ class WorkerManager extends ManagerAbstracter
                 }
             }
 
-            // test server
-            if (!$gmWorker->echo('echo')) {
+            if (!$gmWorker->echo('test_server') && $gmWorker->returnCode() === GEARMAN_COULD_NOT_CONNECT) {
                 $this->log("Failed connect to the server: $s", self::LOG_ERROR);
                 $this->stopWork = true;
 
                 // posix_kill($this->pid, SIGUSR2);
                 posix_kill($this->masterPid, SIGUSR2);
-
                 $this->quit(self::CODE_CONNECT_ERROR);
             }
         }
+
+        unset($gmWorker);
     }
 
     /**
@@ -161,23 +164,23 @@ class WorkerManager extends ManagerAbstracter
 
         $e = $ret = null;
 
-        $this->log("($h) Starting Job: $name", self::LOG_WORKER_INFO);
-        $this->log("($h) Job Workload: $wl", self::LOG_DEBUG);
+        $this->log("($h) Starting job: $name", self::LOG_WORKER_INFO);
+        $this->log("($h) Job $name Workload: $wl", self::LOG_DEBUG);
         $this->trigger(self::EVENT_BEFORE_WORK, [$job]);
 
         // Run the job handler here
         try {
             if ($handler instanceof JobInterface) {
                 $jobClass = get_class($handler);
-                $this->log("($h) Calling: Calling Job object ($jobClass) for $name.", self::LOG_DEBUG);
-                $ret = $handler->run($job->workload(), $this, $job);
+                $this->log("($h) Calling Job object handler($jobClass) do the job: $name.", self::LOG_WORKER_INFO);
+                $ret = $handler->run($job->workload(), $job);
             } else {
                 $jobFunc = is_string($handler) ? $handler : 'Closure';
-                $this->log("($h) Calling: Calling function ($jobFunc) for $name.", self::LOG_DEBUG);
-                $ret = $handler($job->workload(), $this, $job);
+                $this->log("($h) Calling function handler($jobFunc) do the job: $name.", self::LOG_WORKER_INFO);
+                $ret = $handler($job->workload(), $job);
             }
         } catch (\Exception $e) {
-            $this->log("($h) Failed: failed to handle job for $name. Msg: " . $e->getMessage(), self::LOG_ERROR);
+            $this->log("($h) Failed to do the job: $name. Error: " . $e->getMessage(), self::LOG_ERROR);
             $this->trigger(self::EVENT_AFTER_ERROR, [$job, $e]);
         }
 

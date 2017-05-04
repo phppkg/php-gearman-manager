@@ -21,7 +21,7 @@ class ImageResizeJob extends Job
     /**
      * {@inheritDoc}
      */
-    public function run($workload, WorkerManager $manger, \GearmanJob $job)
+    public function run($workload, \GearmanJob $job)
     {
         $data = unserialize($workload);
 
