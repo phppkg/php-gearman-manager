@@ -10,7 +10,7 @@ namespace inhere\gearman\jobs;
 
 
 use inhere\gearman\Job;
-use inhere\gearman\WorkerManager;
+use inhere\gearman\GwManager;
 
 /**
  * Class ImageResizeJob

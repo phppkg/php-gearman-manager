@@ -13,10 +13,10 @@ use GearmanWorker;
 use inhere\gearman\jobs\JobInterface;
 
 /**
- * Class WorkerManager GwManager
+ * Class GwManager - gearman worker manager
  * @package inhere\gearman
  */
-class WorkerManager extends ManagerAbstracter
+class GwManager extends ManagerAbstracter
 {
     /**
      * Starts a worker for the PECL library
@@ -150,6 +150,10 @@ class WorkerManager extends ManagerAbstracter
         }
 
         unset($gmWorker);
+
+        // Since we got here, all must be ok, send a CONTINUE
+        $this->log("code watch is running. Sending SIGCONT(continue) to master(PID:{$this->masterPid}).", self::LOG_PROC_INFO);
+        posix_kill($this->masterPid, SIGCONT);
     }
 
     /**

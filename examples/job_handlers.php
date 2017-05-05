@@ -4,6 +4,17 @@
  * @var \inhere\gearman\WorkerManager $mgr
  */
 
+/**
+ * a class implement the '__invoke()'
+ */
+class TestJob
+{
+    public function __invoke($workload, \GearmanJob $job)
+    {
+        # code...
+    }
+}
+
 $mgr->addHandler('reverse_string', function ($string, \GearmanJob $job)
 {
     $result = strrev($string);

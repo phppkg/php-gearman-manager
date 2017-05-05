@@ -35,7 +35,8 @@ interface ManagerInterface
      */
     const HANDLER_FUNC = 'func';
     const HANDLER_CLOSURE = 'closure';
-    const HANDLER_JOB = 'job';
+    const HANDLER_JOB = 'job'; // when class implements the interface `JobInterface`
+    const HANDLER_INVOKE = 'invoke'; // when class implements the method `__invoke()`
 
     /**
      * Log levels can be enabled from the command line with -v, -vv, -vvv
@@ -50,9 +51,19 @@ interface ManagerInterface
     const LOG_DEBUG = 6;
     const LOG_CRAZY = 8;
 
+    /**
+     * Log file save type.
+     */
+    const LOG_SPLIT_NO = '';
+    const LOG_SPLIT_DAY = 'day';
+    const LOG_SPLIT_HOUR = 'hour';
 
+    const LOG_CHECK_INTERVAL = 300;
     const DO_ALL = '__all__';
 
+    /**
+     * some MIN values
+     */
     const MIN_LIFETIME = 1800;
     const MIN_RUN_JOBS = 200;
     const MIN_JOB_TIMEOUT = 10;
