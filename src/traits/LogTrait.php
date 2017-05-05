@@ -82,7 +82,7 @@ trait LogTrait
     }
 
     /**
-     * update the log file name. If 'split_type' manager running to loog time.
+     * update the log file name. If 'log_split' is not empty and manager running to long time.
      */
     protected function updateLogFile()
     {
@@ -147,8 +147,8 @@ trait LogTrait
      */
     public function genLogFile($createDir = false)
     {
-        // split type
-        if (!($type = $this->config['split']) || !($file = $this->config['log_file'])) {
+        // log split type
+        if (!($type = $this->config['log_split']) || !($file = $this->config['log_file'])) {
             return $this->config['log_file'];
         }
 

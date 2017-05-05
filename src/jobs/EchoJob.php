@@ -17,7 +17,7 @@ class EchoJob extends Job
     /**
      * {@inheritDoc}
      */
-    public function run($workload, \GearmanJob $job)
+    protected function doRun($workload, \GearmanJob $job)
     {
         echo "receive: $workload";
     }

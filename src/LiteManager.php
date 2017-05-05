@@ -15,7 +15,7 @@ use GearmanWorker;
  * Class LiteManager
  * @package inhere\gearman
  */
-class LiteManager extends ManagerAbstracter
+class LiteManager extends WorkerManager
 {
 
 }

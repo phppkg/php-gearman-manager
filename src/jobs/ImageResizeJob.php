@@ -8,10 +8,6 @@
 
 namespace inhere\gearman\jobs;
 
-
-use inhere\gearman\Job;
-use inhere\gearman\GwManager;
-
 /**
  * Class ImageResizeJob
  * @package inhere\gearman\jobs
@@ -21,7 +17,7 @@ class ImageResizeJob extends Job
     /**
      * {@inheritDoc}
      */
-    public function run($workload, \GearmanJob $job)
+    protected function doRun($workload, \GearmanJob $job)
     {
         $data = unserialize($workload);
 

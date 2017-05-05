@@ -8,6 +8,8 @@
 
 namespace inhere\gearman\jobs;
 
+use inhere\gearman\WorkerManager;
+
 /**
  * Class JobInterface
  * @package inhere\gearman\jobs
@@ -18,7 +20,8 @@ interface JobInterface
      * do the job
      * @param string $workload
      * @param \GearmanJob $job
+     * @param WorkerManager $manager
      * @return mixed
      */
-    public function run($workload, \GearmanJob $job);
+    public function run($workload, \GearmanJob $job, WorkerManager $manager);
 }

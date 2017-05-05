@@ -11,7 +11,7 @@ class TestJob
 {
     public function __invoke($workload, \GearmanJob $job)
     {
-        # code...
+        echo "from TestJob, call by __invoke";
     }
 }
 

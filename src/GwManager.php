@@ -16,7 +16,7 @@ use inhere\gearman\jobs\JobInterface;
  * Class GwManager - gearman worker manager
  * @package inhere\gearman
  */
-class GwManager extends ManagerAbstracter
+class GwManager extends WorkerManager
 {
     /**
      * Starts a worker for the PECL library
@@ -186,7 +186,7 @@ class GwManager extends ManagerAbstracter
                 $this->log("doJob: ($h) Calling Job object handler($jobClass) do the job: $name.", self::LOG_WORKER_INFO);
                 $ret = $handler->run($job->workload(), $job, $this);
             } else {
-                $jobFunc = is_string($handler) ? $handler : 'Closure';
+                $jobFunc = is_string($handler) ? $handler : get_class($handler);
                 $this->log("doJob: ($h) Calling function handler($jobFunc) do the job: $name.", self::LOG_WORKER_INFO);
                 $ret = $handler($job->workload(), $job, $this);
             }
