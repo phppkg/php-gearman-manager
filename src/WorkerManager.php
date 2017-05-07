@@ -6,7 +6,7 @@
  * Time: 下午9:30
  */
 
-declare(ticks = 1);
+declare(ticks=1);
 
 namespace inhere\gearman;
 
@@ -41,6 +41,11 @@ abstract class WorkerManager implements ManagerInterface
     /**
      * @var string
      */
+    private $fullScript;
+
+    /**
+     * @var string
+     */
     private $script;
 
     /**
@@ -59,12 +64,6 @@ abstract class WorkerManager implements ManagerInterface
      */
     protected $daemon = false;
 
-    /**
-     * Watch the 'load_file' modify.
-     * @var bool
-     */
-    protected $watchModify = true;
-
     ///////// process control //////////
 
     /**
@@ -79,30 +78,34 @@ abstract class WorkerManager implements ManagerInterface
     protected $pid = 0;
 
     /**
-     * @var string
-     */
-    protected $pidFile;
-
-    /**
-     * @var bool
-     */
-    protected $isMaster = false;
-
-    /**
      * The PID of the parent(master) process, when running in the forked helper,worker.
      */
     protected $masterPid = 0;
-
-    /**
-     * @var bool
-     */
-    private $isHelper = false;
 
     /**
      * The PID of the helper process
      * @var int
      */
     protected $helperPid = 0;
+    /**
+     * @var bool
+     */
+    protected $isMaster = false;
+
+    /**
+     * @var bool
+     */
+    protected $isHelper = false;
+
+    /**
+     * @var bool
+     */
+    protected $isWorker = false;
+
+    /**
+     * @var string
+     */
+    protected $pidFile;
 
     /**
      * wait response for process signal
@@ -119,7 +122,7 @@ abstract class WorkerManager implements ManagerInterface
     /**
      * @var bool
      */
-    private $isWorker = false;
+    // protected $working = true;
 
     /**
      * workers
@@ -146,12 +149,6 @@ abstract class WorkerManager implements ManagerInterface
      * @var integer
      */
     protected $maxLifetime = 3600;
-
-    /**
-     * the worker max handle 2000 job. after will restart.
-     * @var integer
-     */
-    protected $maxRunJobs = 2000;
 
     /**
      * Number of times this worker has run job
@@ -181,7 +178,7 @@ abstract class WorkerManager implements ManagerInterface
      */
     protected $meta = [
         'start_time' => 0,
-        'stop_time'  => 0,
+        'stop_time' => 0,
     ];
 
     ///////// config //////////
@@ -210,7 +207,7 @@ abstract class WorkerManager implements ManagerInterface
         'group' => '',
 
         'daemon' => false,
-        'pid_file' => 'worker_manager.pid',
+        'pid_file' => 'gwm.pid',
 
         // 需要 4 个 worker 处理所有的 job, 随机处理。
         'worker_num' => 4,
@@ -220,11 +217,9 @@ abstract class WorkerManager implements ManagerInterface
 
         // Workers will only live for 1 hour
         'max_lifetime' => 3600,
-
         // now, max_lifetime is <= 3600 and <= 4200
         'restart_splay' => 600,
-
-        // max run 2000 job of each worker. after will auto restart. // todo ...
+        // max run 2000 job of each worker. after will auto restart.
         'max_run_jobs' => 2000,
 
         // log
@@ -233,7 +228,7 @@ abstract class WorkerManager implements ManagerInterface
         'log_split' => 'day',
         // will write log by `syslog()`
         'log_syslog' => false,
-        'log_file' => 'job_workers.log',
+        'log_file' => 'gwm.log',
     ];
 
     /**
@@ -308,11 +303,12 @@ abstract class WorkerManager implements ManagerInterface
         $result = Helper::parseParameters([
             'd', 'daemon', 'w', 'watch', 'h', 'help', 'V', 'version'
         ]);
+        $this->fullScript = implode(' ', $GLOBALS['argv']);
         $this->script = $result[0];
         $this->command = $command = isset($result[1]) ? $result[1] : 'start';
         unset($result[0], $result[1]);
 
-        $supported = ['start' ,'stop', 'restart', 'reload', 'status'];
+        $supported = ['start', 'stop', 'restart', 'reload', 'status'];
 
         if (!in_array($command, $supported, true)) {
             $this->showHelp("The command [{$command}] is don't supported!");
@@ -326,7 +322,7 @@ abstract class WorkerManager implements ManagerInterface
 
         // Debug option to dump the config and exit
         if (isset($result['D']) || isset($result['dump'])) {
-            $val = isset($result['D']) ? $result['D'] : (isset($result['dump']) ? $result['dump']: '');
+            $val = isset($result['D']) ? $result['D'] : (isset($result['dump']) ? $result['dump'] : '');
             $this->dumpInfo($val === 'all');
         }
 
@@ -353,18 +349,16 @@ abstract class WorkerManager implements ManagerInterface
             case 'stop':
             case 'restart':
                 // stop: stop and exit. restart: stop and start
-                $this->stop($masterPid, $command === 'stop');
+                $this->stopMaster($masterPid, $command === 'stop');
                 break;
             case 'reload':
                 // reload workers
                 $this->reloadWorkers($masterPid);
                 break;
-
             case 'status':
                 // $this->showStatus();
                 $this->showHelp("The command [{$command}] is un-completed!");
                 break;
-
             default:
                 $this->showHelp("The command [{$command}] is don't supported!");
                 break;
@@ -478,12 +472,11 @@ abstract class WorkerManager implements ManagerInterface
             $this->config['log_file'] = $logFile;
         }
 
-
+        $this->config['timeout'] = (int)$config['timeout'];
         $this->config['max_lifetime'] = (int)$config['max_lifetime'];
         $this->config['max_run_jobs'] = (int)$config['max_run_jobs'];
         $this->config['restart_splay'] = (int)$config['restart_splay'];
 
-        $this->config['timeout'] = (int)$config['timeout'];
         $this->config['watch_modify'] = (bool)$config['watch_modify'];
         $this->config['watch_modify_interval'] = (int)$config['watch_modify_interval'];
 
@@ -517,9 +510,6 @@ abstract class WorkerManager implements ManagerInterface
 
         $this->doAllWorkerNum = $this->config['worker_num'];
         $this->maxLifetime = $this->config['max_lifetime'];
-        $this->maxRunJobs = $this->config['max_run_jobs'];
-        $this->watchModify = $this->config['watch_modify'];
-        $this->daemon = $this->config['daemon'];
         $this->verbose = $this->config['log_level'];
         $this->pidFile = $this->config['pid_file'];
 
@@ -545,11 +535,11 @@ abstract class WorkerManager implements ManagerInterface
             $this->quit();
         }
 
-        // 不能直接将属性 isParent 定义为 True
+        // 不能直接将属性 isMaster 定义为 True
         // 这会导致启动后，在执行任意命令时都会删除 pid 文件(触发了__destruct)
         $this->isMaster = true;
         $this->meta['start_time'] = time();
-        $this->setProcessTitle("php-gwm: master process");
+        $this->setProcessTitle(sprintf("php-gwm: master process (%s)", $this->fullScript));
 
         // prepare something for start
         $this->prepare();
@@ -581,14 +571,13 @@ abstract class WorkerManager implements ManagerInterface
     protected function prepare()
     {
         // If we want run as daemon, fork here and exit
-        if ($this->daemon) {
-            $this->log("Run the worker manager in the background", self::LOG_PROC_INFO);
+        if ($this->config['daemon']) {
+            $this->stdout('Run the worker manager in the background');
             $this->runAsDaemon();
         }
 
-        if ($this->pidFile && !file_put_contents($this->pidFile, $this->pid)) {
-            $this->showHelp("Unable to write PID to the file {$this->pidFile}");
-        }
+        // save Pid File
+        $this->savePidFile();
 
         // open Log File
         $this->openLogFile();
@@ -671,27 +660,27 @@ abstract class WorkerManager implements ManagerInterface
      */
     protected function startWatchModify()
     {
-        if ($this->watchModify && ($loaderFile = $this->config['loader_file'])) {
+        if ($this->config['watch_modify'] && ($loaderFile = $this->config['loader_file'])) {
             $lastCheckTime = 0;
             $checkInterval = $this->config['watch_modify_interval'];
 
             $this->log("Running loop to watch modify(interval:{$checkInterval}s) for 'loader_file': $loaderFile", self::LOG_DEBUG);
 
             while (true) {
-                $maxTime = 0;
+                // $maxTime = 0;
                 $mdfTime = filemtime($loaderFile);
-                $maxTime = max($maxTime, $mdfTime);
+                // $maxTime = max($maxTime, $mdfTime);
 
                 $this->log("'loader_file': {$loaderFile} - MODIFY TIME: $mdfTime,LAST CHECK TIME: $lastCheckTime", self::LOG_DEBUG);
 
                 if ($lastCheckTime && $mdfTime > $lastCheckTime) {
                     clearstatcache();
                     $this->log("New code modify found. Sending SIGHUP(reload) to master(PID:{$this->masterPid})", self::LOG_PROC_INFO);
-                    posix_kill($this->masterPid, SIGHUP);
+                    $this->sendSignal($this->masterPid, SIGHUP);
                     break;
                 }
 
-                $lastCheckTime = $maxTime;
+                $lastCheckTime = time();
                 sleep($checkInterval);
             }
         } else {
@@ -723,7 +712,6 @@ abstract class WorkerManager implements ManagerInterface
                 // Don't start workers too fast. They can overwhelm the gearmand server and lead to connection timeouts.
                 usleep(500000);
             }
-
         }
 
         // Next we loop the workers and ensure we have enough running for each worker
@@ -747,7 +735,7 @@ abstract class WorkerManager implements ManagerInterface
         // Set the last code check time to now since we just loaded all the code
         // $this->lastCheckTime = time();
 
-        $this->log('Jobs workers count:' . print_r($workersCount, true), self::LOG_DEBUG);
+        $this->log("Jobs workers count:\n" . print_r($workersCount, true), self::LOG_DEBUG);
     }
 
     /**
@@ -798,9 +786,9 @@ abstract class WorkerManager implements ManagerInterface
                 break;
 
             case -1: // fork failed.
-                $this->log("Could not fork workers process!");
+                $this->log('Could not fork workers process! exiting');
                 $this->stopWork = true;
-                $this->stopWorkers(SIGTERM, true);
+                $this->stopWorkers();
                 break;
 
             default: // at parent
@@ -816,7 +804,7 @@ abstract class WorkerManager implements ManagerInterface
     /**
      * Starts a worker for the driver
      *
-     * @param   array $jobs     List of worker functions to add
+     * @param   array $jobs List of worker functions to add
      * @param   array $timeouts list of worker timeouts to pass to server
      * @return  int             The exit status code
      */
@@ -865,7 +853,7 @@ abstract class WorkerManager implements ManagerInterface
 
             if ($this->stopWork && time() - $this->meta['stop_time'] > 60) {
                 $this->log('Workers have not exited, force killing.', self::LOG_PROC_INFO);
-                $this->stopWorkers(SIGKILL, true);
+                $this->stopWorkers(SIGKILL);
                 // $this->killProcess($pid, SIGKILL);
             } else {
                 // If any workers have been running 150% of max run time, forcibly terminate them
@@ -994,95 +982,6 @@ abstract class WorkerManager implements ManagerInterface
     abstract public function doJob($job);
 
 //////////////////////////////////////////////////////////////////////
-/// process control method
-//////////////////////////////////////////////////////////////////////
-
-    /**
-     * Do shutdown Manager
-     * @param  int $pid Master Pid
-     * @param  boolean $quit Quit, When stop success?
-     */
-    protected function stop($pid, $quit = true)
-    {
-        $this->stdout("The manager process(PID:$pid) stopping ...");
-
-        // do stop
-        // 向主进程发送此信号(SIGTERM)服务器将安全终止；也可在PHP代码中调用`$server->shutdown()` 完成此操作
-        if (!$this->killProcess($pid, SIGTERM)) {
-            $this->stdout("Stop the manager process(PID:$pid) failed!", self::LOG_ERROR);
-        }
-
-        // stop success
-        $this->stdout("The manager process(PID:$pid) stopped.");
-
-        $quit && $this->quit();
-    }
-
-    /**
-     * stop Helper process
-     */
-    protected function stopHelper()
-    {
-        if ($pid = $this->helperPid) {
-            $this->log("Stopping helper(PID:$pid) ...", self::LOG_PROC_INFO);
-
-            $this->helperPid = 0;
-            $this->killProcess($pid, SIGKILL);
-        }
-    }
-
-    /**
-     * reloadWorkers
-     * @param $masterPid
-     */
-    protected function reloadWorkers($masterPid)
-    {
-        $this->stdout("Workers reloading ...");
-
-        posix_kill($masterPid, SIGHUP);
-
-        $this->quit();
-    }
-
-    /**
-     * Stops all running workers
-     * @param int $signal
-     * @param bool $clearInfo
-     * @return bool
-     */
-    protected function stopWorkers($signal = SIGTERM, $clearInfo = false)
-    {
-        if (!$this->workers) {
-            $this->log('No child process(worker) need to stop', self::LOG_PROC_INFO);
-            return false;
-        }
-
-        $signals = [
-            SIGINT => 'SIGINT',
-            SIGTERM => 'SIGTERM',
-            SIGKILL => 'SIGKILL',
-        ];
-
-        $this->log("Stopping workers(signal:{$signals[$signal]}) ...", self::LOG_PROC_INFO);
-
-        foreach ($this->workers as $pid => $worker) {
-            $this->log(sprintf("Stopping worker(PID:$pid) (JOBS: %s)", implode(',', $worker['jobs'])), self::LOG_PROC_INFO);
-
-            if ($this->killProcess($pid, $signal, 2)) {
-                $this->log("Worker(PID:$pid) stopped", self::LOG_PROC_INFO);
-
-                if ($clearInfo) {
-                    unset($this->workers[$pid]);
-                }
-            }
-        }
-
-        // $this->log('All workers stopped', self::LOG_PROC_INFO);
-
-        return true;
-    }
-
-//////////////////////////////////////////////////////////////////////
 /// some help method
 //////////////////////////////////////////////////////////////////////
 
@@ -1185,6 +1084,16 @@ EOF;
     }
 
     /**
+     * savePidFile
+     */
+    protected function savePidFile()
+    {
+        if ($this->pidFile && !file_put_contents($this->pidFile, $this->pid)) {
+            $this->showHelp("Unable to write PID to the file {$this->pidFile}");
+        }
+    }
+
+    /**
      * delete pidFile
      */
     protected function delPidFile()
@@ -1239,7 +1148,7 @@ EOF;
         $e1 = function_exists('posix_kill');
         $e2 = function_exists('pcntl_fork');
 
-        if (!$e1 ||!$e2) {
+        if (!$e1 || !$e2) {
             $e1t = $e1 ? 'yes' : 'no';
             $e2t = $e2 ? 'yes' : 'no';
 
@@ -1264,12 +1173,6 @@ EOF;
             // delPidFile
             $this->delPidFile();
 
-            // stop workers processes
-            // if ($this->workers) {
-            //     $this->log('Stopping workers trigger by ' . __METHOD__, self::LOG_DEBUG);
-            //     $this->stopWorkers();
-            // }
-
             // close logFileHandle
             if ($this->logFileHandle) {
                 fclose($this->logFileHandle);
@@ -1277,17 +1180,18 @@ EOF;
                 $this->logFileHandle = null;
             }
 
+            $this->log('All workers stopped', self::LOG_PROC_INFO);
             $this->log("Manager stopped\n", self::LOG_PROC_INFO);
 
-        // helper
+            // helper
         } elseif ($this->isHelper) {
             $this->log("Helper stopped", self::LOG_PROC_INFO);
-        // worker
+            // worker
         } elseif ($this->isWorker) {
             // $this->log("Worker stopped(PID:{$this->pid})", self::LOG_PROC_INFO);
         }
 
-        $this->clear();
+        $this->clear($this->isMaster);
     }
 
 //////////////////////////////////////////////////////////////////////
@@ -1400,7 +1304,7 @@ EOF;
      */
     public function isDaemon()
     {
-        return $this->daemon;
+        return $this->config['daemon'];
     }
 
     /**
@@ -1409,14 +1313,6 @@ EOF;
     public function getVerbose()
     {
         return $this->verbose;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isMaster()
-    {
-        return $this->isMaster;
     }
 
     /**

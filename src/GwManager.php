@@ -57,7 +57,7 @@ class GwManager extends WorkerManager
         }
 
         $start = time();
-        $maxRun = $this->maxRunJobs;
+        $maxRun = $this->config['max_run_jobs'];
 
         while (!$this->stopWork) {
             if (
@@ -72,7 +72,7 @@ class GwManager extends WorkerManager
                 // no received anything jobs. sleep 5 seconds
                 if ($gmWorker->returnCode() === GEARMAN_NO_JOBS) {
                     $this->log('No received anything job.(sleep 5s)', self::LOG_CRAZY);
-                    sleep(5);
+                    !$this->stopWork && sleep(5);
                     continue;
                 }
 
@@ -81,7 +81,7 @@ class GwManager extends WorkerManager
                     // GearmanWorker was called with no connections.
                     if ($gmWorker->returnCode() === GEARMAN_NO_ACTIVE_FDS) { // code: 7
                         $this->log('We are not connected to any servers, so wait a bit before trying to reconnect.(sleep 5s)', self::LOG_CRAZY);
-                        sleep(5);
+                        !$this->stopWork && sleep(5);
                         continue;
                     }
 
