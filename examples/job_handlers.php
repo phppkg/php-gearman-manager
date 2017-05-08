@@ -24,9 +24,7 @@ $mgr->addHandler('reverse_string', function ($string, \GearmanJob $job)
     return $result;
 });
 
-$mgr->addHandler('test_echo', function ($str) {
-   echo $str;
-});
+$mgr->addHandler('test_job', TestJob::class);
 
 $mgr->addHandler('echo_job', \inhere\gearman\jobs\EchoJob::class, [
     'worker_num' => 2,

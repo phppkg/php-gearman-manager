@@ -930,7 +930,7 @@ abstract class WorkerManager implements ManagerInterface
                 $opts['type'] = self::HANDLER_INVOKE;
             } else {
                 throw new \InvalidArgumentException(sprintf(
-                    "The job(%s) handler(%s) must be is a function name or a class implement the '__invoke()' or a subclass of the interface %s",
+                    "The job(%s) handler(%s) must be is a function name or a class implement the '__invoke()' or a class implement the interface %s",
                     $name,
                     $handler,
                     JobInterface::class
