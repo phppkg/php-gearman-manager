@@ -82,6 +82,13 @@ trait ProcessControlTrait
             return false;
         }
 
+        static $stopping = false;
+
+        if ($stopping) {
+            $this->log('Workers stopping ...', self::LOG_PROC_INFO);
+            return true;
+        }
+
         $signals = [
             SIGINT => 'SIGINT',
             SIGTERM => 'SIGTERM',
@@ -93,6 +100,10 @@ trait ProcessControlTrait
         foreach ($this->workers as $pid => $worker) {
             // send exit signal.
             $this->killProcess($pid, $signal);
+        }
+
+        if ($signal === SIGKILL) {
+            $stopping = true;
         }
 
         return true;
@@ -172,25 +183,20 @@ trait ProcessControlTrait
     {
         static $stopCount = 0;
 
-        if (!$this->isMaster) {
+        if ($this->isWorker) {
             $this->stopWork = true;
+            $this->meta['stop_time'] = time();
             $this->log("Received 'stopWork' signal(signal:SIGTERM), will be exiting.", self::LOG_PROC_INFO);
-        } else {
+        } elseif ($this->isMaster) {
             switch ($sigNo) {
-                case SIGUSR1:
-                    $this->showHelp("No jobs handlers could be found(signal:SIGUSR1)");
-                    break;
-                case SIGUSR2:
-                    $servers = $this->getServers(false);
-                    $this->showHelp("Error validating job servers, please check server address.(job servers: $servers)");
-                    break;
                 case SIGCONT:
                     $this->log('Validation through, continue(signal:SIGCONT)...', self::LOG_PROC_INFO);
                     $this->waitForSignal = false;
                     break;
-                case SIGINT:
+                case SIGINT: // Ctrl + C
                 case SIGTERM:
-                    $this->log('Shutting down(signal:SIGTERM)...', self::LOG_PROC_INFO);
+                    $sigText = $sigNo === SIGINT ? 'SIGINT' : 'SIGTERM';
+                    $this->log("Shutting down(signal:$sigText)...", self::LOG_PROC_INFO);
                     $this->stopWork = true;
                     $this->meta['stop_time'] = time();
                     $stopCount++;
@@ -206,6 +212,13 @@ trait ProcessControlTrait
                     $this->log('Restarting workers(signal:SIGHUP)', self::LOG_PROC_INFO);
                     $this->openLogFile();
                     $this->stopWorkers();
+                    break;
+                case SIGUSR1: // reload workers and reload handlers
+                    $this->log('Reloading workers and handlers(signal:SIGUSR1)', self::LOG_PROC_INFO);
+                    $this->stopWork = true;
+                    $this->start();
+                    break;
+                case SIGUSR2:
                     break;
                 default:
                     // handle all other signals

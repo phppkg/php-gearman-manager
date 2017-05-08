@@ -645,7 +645,11 @@ abstract class WorkerManager implements ManagerInterface
                     pcntl_waitpid($pid, $status, WNOHANG);
                     $exitCode = pcntl_wexitstatus($status);
 
-                    if (self::CODE_NORMAL_EXITED !== $exitCode) {
+                    if (self::CODE_CONNECT_ERROR === $exitCode) {
+                        $servers = $this->getServers(false);
+                        $this->log("Error validating job servers, please check server address.(job servers: $servers)");
+                        $this->quit($exitCode);
+                    } elseif (self::CODE_NORMAL_EXITED !== $exitCode) {
                         $this->log("Helper process exited with non-zero exit code [$exitCode].");
                         $this->quit($exitCode);
                     }
@@ -666,7 +670,7 @@ abstract class WorkerManager implements ManagerInterface
 
             $this->log("Running loop to watch modify(interval:{$checkInterval}s) for 'loader_file': $loaderFile", self::LOG_DEBUG);
 
-            while (true) {
+            while (!$this->stopWork) {
                 // $maxTime = 0;
                 $mdfTime = filemtime($loaderFile);
                 // $maxTime = max($maxTime, $mdfTime);
@@ -683,9 +687,9 @@ abstract class WorkerManager implements ManagerInterface
                 $lastCheckTime = time();
                 sleep($checkInterval);
             }
-        } else {
-            $this->quit();
         }
+
+        $this->quit();
     }
 
     /**
@@ -763,6 +767,7 @@ abstract class WorkerManager implements ManagerInterface
                 $this->isMaster = $this->isHelper = false;
                 $this->masterPid = $this->pid;
                 $this->pid = getmypid();
+                $this->meta['start_time'] = time();
 
                 $this->setProcessTitle("php-gwm: worker process");
                 $this->registerSignals(false);
@@ -780,8 +785,8 @@ abstract class WorkerManager implements ManagerInterface
                 }
 
                 $code = $this->startDriverWorker($jobAry, $timeouts);
-
                 $this->log("Worker exiting(PID:{$this->pid} Code:$code)", self::LOG_WORKER_INFO);
+
                 $this->quit($code);
                 break;
 
@@ -851,7 +856,7 @@ abstract class WorkerManager implements ManagerInterface
                 }
             }
 
-            if ($this->stopWork && time() - $this->meta['stop_time'] > 60) {
+            if ($this->stopWork && time() - $this->meta['stop_time'] > 30) {
                 $this->log('Workers have not exited, force killing.', self::LOG_PROC_INFO);
                 $this->stopWorkers(SIGKILL);
                 // $this->killProcess($pid, SIGKILL);
@@ -1126,6 +1131,7 @@ EOF;
                 $message = "Worker (PID:$pid) has been running too long. Forcibly killing process. (Jobs:$jobStr)";
                 break;
             case self::CODE_NORMAL_EXITED:
+                unset($this->workers[$pid]);
                 $message = "Worker (PID:$pid) normally exited. (Jobs:$jobStr)";
                 break;
             case self::CODE_CONNECT_ERROR:

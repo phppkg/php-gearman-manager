@@ -71,8 +71,11 @@ class GwManager extends WorkerManager
 
                 // no received anything jobs. sleep 5 seconds
                 if ($gmWorker->returnCode() === GEARMAN_NO_JOBS) {
+                    if ($this->stopWork) {
+                        break;
+                    }
                     $this->log('No received anything job.(sleep 5s)', self::LOG_CRAZY);
-                    !$this->stopWork && sleep(5);
+                    sleep(5);
                     continue;
                 }
 
@@ -80,8 +83,11 @@ class GwManager extends WorkerManager
                 if (!$gmWorker->wait()) {
                     // GearmanWorker was called with no connections.
                     if ($gmWorker->returnCode() === GEARMAN_NO_ACTIVE_FDS) { // code: 7
+                        if ($this->stopWork) {
+                            break;
+                        }
                         $this->log('We are not connected to any servers, so wait a bit before trying to reconnect.(sleep 5s)', self::LOG_CRAZY);
-                        !$this->stopWork && sleep(5);
+                        sleep(5);
                         continue;
                     }
 
@@ -117,12 +123,6 @@ class GwManager extends WorkerManager
      */
     protected function validateDriverWorkers()
     {
-        if (!$this->handlers) {
-            $this->log('No job handlers registered!');
-            posix_kill($this->masterPid, SIGUSR1);
-            $this->quit(self::CODE_NO_HANDLERS);
-        }
-
         $gmWorker = new GearmanWorker();
         $gmWorker->setTimeout(5000);
 
@@ -142,9 +142,6 @@ class GwManager extends WorkerManager
             if (!$gmWorker->echo('test_server') && $gmWorker->returnCode() === GEARMAN_COULD_NOT_CONNECT) {
                 $this->log("Failed connect to the server: $s", self::LOG_ERROR);
                 $this->stopWork = true;
-
-                // posix_kill($this->pid, SIGUSR2);
-                posix_kill($this->masterPid, SIGUSR2);
                 $this->quit(self::CODE_CONNECT_ERROR);
             }
         }
