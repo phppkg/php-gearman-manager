@@ -2,7 +2,7 @@
 
 a php gearman workers manager.
 
-referrer the project [brianlmoon/GearmanManager](https://github.com/brianlmoon/GearmanManager), Thank you very much for this project.
+Learning reference the project [brianlmoon/GearmanManager](https://github.com/brianlmoon/GearmanManager), Thank you very much for this project.
 
 add some feature:
 
