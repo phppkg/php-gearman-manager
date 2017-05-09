@@ -552,28 +552,7 @@ abstract class BaseManager implements ManagerInterface
         $this->openLogFile();
 
         if ($username = $this->config['user']) {
-            $user = posix_getpwnam($username);
-
-            if (!$user || !isset($user['uid'])) {
-                $this->showHelp("User ({$username}) not found.");
-            }
-
-            // Ensure new uid can read/write pid and log files
-            if ($this->pidFile && !chown($this->pidFile, $user['uid'])) {
-                $this->log("Unable to chown PID file to {$username}", self::LOG_ERROR);
-            }
-
-            if ($this->logFileHandle && !chown($this->config['log_file'], $user['uid'])) {
-                $this->log("Unable to chown log file to {$username}", self::LOG_ERROR);
-            }
-
-            posix_setuid($user['uid']);
-
-            if (posix_geteuid() !== (int)$user['uid']) {
-                $this->showHelp("Unable to change user to {$username} (UID: {$user['uid']}).");
-            }
-
-            $this->log("User set to {$username}", self::LOG_PROC_INFO);
+            $this->changeScriptOwner($username, $this->config['group']);
         }
     }
 
@@ -910,7 +889,7 @@ abstract class BaseManager implements ManagerInterface
         }
 
         echo <<<EOF
-Gearman worker manager(gwm) script tool. Version $version
+Gearman worker manager(gwm) script tool. Version $version(lite)
 
 USAGE:
   $script {COMMAND} -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-w] [-p PID_FILE]
@@ -928,8 +907,6 @@ OPTIONS:
   -s HOST[:PORT]     Connect to server HOST and optional PORT
 
   -n NUMBER          Start NUMBER workers that do all jobs
-  -u USERNAME        Run workers as USERNAME
-  -g GROUP_NAME      Run workers as user's GROUP NAME
 
   -l LOG_FILE        Log output to LOG_FILE or use keyword 'syslog' for syslog support
   -p PID_FILE        File to write process ID out to
@@ -940,7 +917,8 @@ OPTIONS:
 
   -v [LEVEL]         Increase verbosity level by one. eg: -v vv | -v vvv
 
-  -w,--watch         Automatically watch and reload when 'loader_file' has been modify
+    --no-test        Not add test handler(prefix:test)
+    
   -d,--daemon        Daemon, detach and run in the background
   -h,--help          Shows this help information
   -V,--version       Display the version of the manager
@@ -1086,7 +1064,7 @@ EOF;
     /**
      * @return array
      */
-    public static function getDefaultJobOpt(): array
+    public static function getDefaultJobOpt()
     {
         return self::$defaultJobOpt;
     }
@@ -1094,7 +1072,7 @@ EOF;
     /**
      * @return string
      */
-    public function getFullScript(): string
+    public function getFullScript()
     {
         return $this->fullScript;
     }

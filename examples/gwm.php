@@ -20,7 +20,7 @@ $config = [
     'pid_file' => __DIR__ . '/manager.pid',
 
     'log_level' => Manager::LOG_DEBUG,
-    'log_file' => __DIR__ . '/workers.log',
+    'log_file' => __DIR__ . '/logs/manager.log',
 
     'loader_file' => __DIR__ . '/job_handlers.php',
 ];

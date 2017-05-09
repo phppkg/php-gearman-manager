@@ -101,7 +101,7 @@ trait LogTrait
         }
 
         $lastCheckTime = time();
-        $logFile = $this->genLogFile();
+        $logFile = $this->genLogFile(true);
 
         // update
         if ($file !== $logFile) {

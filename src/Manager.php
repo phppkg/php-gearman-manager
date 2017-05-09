@@ -299,6 +299,63 @@ class Manager extends LiteManager
 
 
     /**
+     * Shows the scripts help info with optional error message
+     * @param string $msg
+     * @param int $code The exit code
+     */
+    protected function showHelp($msg = '', $code = 0)
+    {
+        $version = self::VERSION;
+        $script = $this->getScript();
+
+        if ($msg) {
+            $code = $code ?: self::CODE_UNKNOWN_ERROR;
+            echo "ERROR:\n  " . wordwrap($msg, 108, "\n  ") . "\n\n";
+        }
+
+        echo <<<EOF
+Gearman worker manager(gwm) script tool. Version $version
+
+USAGE:
+  $script {COMMAND} -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-w] [-p PID_FILE]
+  $script -h
+
+COMMANDS:
+  start             Start gearman worker manager(default command)
+  stop              Stop running's gearman worker manager
+  restart           Restart running's gearman worker manager
+  reload            Reload all running workers of the manager
+  status            Get gearman worker manager runtime status
+
+OPTIONS:
+  -c CONFIG          Worker configuration file
+  -s HOST[:PORT]     Connect to server HOST and optional PORT
+
+  -n NUMBER          Start NUMBER workers that do all jobs
+  -u USERNAME        Run workers as USERNAME
+  -g GROUP_NAME      Run workers as user's GROUP NAME
+
+  -l LOG_FILE        Log output to LOG_FILE or use keyword 'syslog' for syslog support
+  -p PID_FILE        File to write process ID out to
+
+  -r NUMBER          Maximum run job iterations per worker
+  -x SECONDS         Maximum seconds for a worker to live
+  -t SECONDS         Number of seconds gearmand server should wait for a worker to complete work before timing out
+
+  -v [LEVEL]         Increase verbosity level by one. eg: -v vv | -v vvv
+  
+    --no-test        Not add test handler(prefix:test)
+
+  -w,--watch         Automatically watch and reload when 'loader_file' has been modify
+  -d,--daemon        Daemon, detach and run in the background
+  -h,--help          Shows this help information
+  -V,--version       Display the version of the manager
+  -D,--dump [all]    Parse the command line and config file then dump it to the screen and exit.\n\n
+EOF;
+        exit($code);
+    }
+
+    /**
      * Handles anything we need to do when we are shutting down
      */
     public function __destruct()
