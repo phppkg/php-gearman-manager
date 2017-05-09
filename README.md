@@ -9,6 +9,8 @@ add some feature:
 - Code is easier to read and understand
 - Can support `reload` `restart` `stop` command
 
+> only support linux system, and require enable `pcntl` `posix_*` 
+
 ## usage 
 
 ### entry script
@@ -36,6 +38,39 @@ $mgr->setHandlersLoader(function (GwManager $mgr)
 });
 
 $mgr->start();
+```
+
+### tool commands
+
+- start
+
+```bash
+// start
+php bin/manager.php 
+// run as daemon
+php bin/manager.php --daemon 
+```
+
+- stop 
+
+```bash 
+php bin/manager.php stop
+```
+
+- restart
+
+```bash
+php bin/manager.php restart
+```
+
+- other
+
+```bash
+// see help info
+php bin/manager.php --help
+
+// print manager config info
+php bin/manager.php -D
 ```
 
 ### add handler
