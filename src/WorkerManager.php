@@ -6,7 +6,7 @@
  * Time: 下午9:30
  */
 
-declare(ticks=1);
+// declare(ticks=1); 更换为使用 pcntl_signal_dispatch(), 性能更好
 
 namespace inhere\gearman;
 
@@ -217,7 +217,7 @@ abstract class WorkerManager implements ManagerInterface
 
         // Workers will only live for 1 hour
         'max_lifetime' => 3600,
-        // now, max_lifetime is <= 3600 and <= 4200
+        // now, max_lifetime is >= 3600 and <= 4200
         'restart_splay' => 600,
         // max run 2000 job of each worker. after will auto restart.
         'max_run_jobs' => 2000,
@@ -642,6 +642,9 @@ abstract class WorkerManager implements ManagerInterface
 
                 while ($this->waitForSignal && !$this->stopWork) {
                     usleep(5000);
+
+                    // receive and dispatch sig
+                    pcntl_signal_dispatch();
                     pcntl_waitpid($pid, $status, WNOHANG);
                     $exitCode = pcntl_wexitstatus($status);
 
@@ -832,6 +835,9 @@ abstract class WorkerManager implements ManagerInterface
 
         // Main processing loop for the parent process
         while (!$this->stopWork || count($this->workers)) {
+            // receive and dispatch sig
+            pcntl_signal_dispatch();
+
             $status = null;
 
             // Check for exited workers

@@ -60,6 +60,9 @@ class GwManager extends WorkerManager
         $maxRun = $this->config['max_run_jobs'];
 
         while (!$this->stopWork) {
+            // receive and dispatch sig
+            pcntl_signal_dispatch();
+
             if (
                 @$gmWorker->work() ||
                 $gmWorker->returnCode() === GEARMAN_IO_WAIT ||  // code: 1
