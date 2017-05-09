@@ -55,7 +55,6 @@ trait LogTrait
             return $this->sysLog($msg . ' ' . $data, $level);
         }
 
-        $pidRole = $this->isMaster ? 'Master' : ($this->isHelper ? 'Helper' : 'Worker');
         $label = isset(self::$levels[$level]) ? self::$levels[$level] : self::LOG_INFO;
 
         list($ts, $ms) = explode('.', sprintf('%.4f', microtime(true)));
@@ -63,7 +62,7 @@ trait LogTrait
 
         $logString = sprintf(
             '[%s] [%s:%d] [%s] %s %s' . PHP_EOL,
-            $ds, $pidRole, $this->pid, $label, trim($msg), $data
+            $ds, $this->getPidRole(), $this->pid, $label, trim($msg), $data
         );
 
         // if not in daemon, print log to \STDOUT

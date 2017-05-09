@@ -8,117 +8,171 @@
 
 namespace inhere\gearman;
 
-use GearmanJob;
 use GearmanWorker;
-use inhere\gearman\jobs\JobInterface;
 
 /**
- * Class GwManager - gearman worker manager
+ * Class Manager - gearman worker manager
  * @package inhere\gearman
  */
-class GwManager extends WorkerManager
+class Manager extends LiteManager
 {
     /**
-     * Starts a worker for the PECL library
-     *
-     * @param   array $jobs List of worker functions to add
-     * @param   array $timeouts list of worker timeouts to pass to server
-     * @return  int The exit status code
-     * @throws \GearmanException
+     * The PID of the helper process
+     * @var int
      */
-    protected function startDriverWorker(array $jobs, array $timeouts = [])
+    protected $helperPid = 0;
+
+    /**
+     * @var bool
+     */
+    protected $isHelper = false;
+
+    /**
+     * wait response for process signal
+     * @var bool
+     */
+    private $waitForSignal = false;
+
+    /**
+     * @var \Closure
+     */
+    private $handlersLoader;
+
+    /**
+     * do start run manager
+     */
+    public function start()
     {
-        $wkrTimeout = 5;
-        $gmWorker = new GearmanWorker();
-        // 设置非阻塞式运行
-        $gmWorker->addOptions(GEARMAN_WORKER_NON_BLOCKING);
-        $gmWorker->setTimeout($wkrTimeout * 1000); // 5s
-
-        $this->debug("The gearman worker started");
-
-        foreach ($this->getServers() as $s) {
-            $this->log("Adding a job server: $s", self::LOG_WORKER_INFO);
-
-            // see: https://bugs.php.net/bug.php?id=63041
-            try {
-                $gmWorker->addServers($s);
-            } catch (\GearmanException $e) {
-                if ($e->getMessage() !== 'Failed to set exception option') {
-                    $this->stopWork = true;
-                    throw $e;
-                }
-            }
+        // load all job handlers
+        if ($loader = $this->handlersLoader) {
+            $loader($this);
         }
 
-        foreach ($jobs as $job) {
-            $timeout = $timeouts[$job] >= 0 ? $timeouts[$job] : 0;
-            $this->log("Adding job handler to worker, Name: $job Timeout: $timeout", self::LOG_WORKER_INFO);
-            $gmWorker->addFunction($job, [$this, 'doJob'], null, $timeout);
+        // check
+        if (!$this->handlers) {
+            $this->stdout("ERROR: No jobs handler found. please less register one.\n");
+            $this->quit();
         }
 
-        $start = time();
-        $maxRun = $this->config['max_run_jobs'];
+        // 不能直接将属性 isMaster 定义为 True
+        // 这会导致启动后，在执行任意命令时都会删除 pid 文件(触发了__destruct)
+        $this->isMaster = true;
+        $this->meta['start_time'] = time();
+        $this->setProcessTitle(sprintf("php-gwm: master process (%s)", $this->getFullScript()));
 
-        while (!$this->stopWork) {
-            // receive and dispatch sig
-            pcntl_signal_dispatch();
+        // prepare something for start
+        $this->prepare();
 
-            if (
-                @$gmWorker->work() ||
-                $gmWorker->returnCode() === GEARMAN_IO_WAIT ||  // code: 1
-                $gmWorker->returnCode() === GEARMAN_NO_JOBS     // code: 35
-            ) {
-                if ($gmWorker->returnCode() === GEARMAN_SUCCESS) { // code 0
-                    continue;
+        // Register signal listeners `pcntl_signal_dispatch()`
+        $this->registerSignals();
+
+        // fork a Helper process
+        // $this->startHelper('startWatcher');
+        $this->startHelper();
+
+        $this->log("Started manager with pid {$this->pid}, Current script owner: " . get_current_user(), self::LOG_PROC_INFO);
+
+        // start workers and set up a running environment
+        $this->startWorkers();
+
+        // start worker monitor
+        $this->startWorkerMonitor();
+
+        // stop Helper
+        $this->stopHelper();
+
+        $this->log('Stopping Manager ...', self::LOG_PROC_INFO);
+
+        $this->quit();
+    }
+
+    /**
+     * Forks the process and runs the given method. The parent then waits
+     * for the worker child process to signal back that it can continue
+     *
+     * param   string $method Class method to run after forking @see `startWatcher()`
+     *
+     * @old forkOwner()
+     */
+    protected function startHelper()
+    {
+        $this->waitForSignal = true;
+        $pid = pcntl_fork();
+
+        switch ($pid) {
+            case 0: // at workers(helper process)
+                $this->setProcessTitle("php-gwm: helper process");
+                $this->isMaster = false;
+                $this->isHelper = true;
+                $this->masterPid = $this->pid;
+                $this->pid = getmypid();
+
+                $this->validateDriverWorkers();
+                $this->startWatchModify();
+                break;
+            case -1:
+                $this->log('Failed to fork helper process', self::LOG_ERROR);
+                $this->stopWork = true;
+                break;
+            default: // at parent
+                $this->log("Helper process forked with PID:$pid", self::LOG_PROC_INFO);
+                $this->helperPid = $pid;
+
+                while ($this->waitForSignal && !$this->stopWork) {
+                    usleep(5000);
+
+                    // receive and dispatch sig
+                    pcntl_signal_dispatch();
+                    pcntl_waitpid($pid, $status, WNOHANG);
+                    $exitCode = pcntl_wexitstatus($status);
+
+                    if (self::CODE_CONNECT_ERROR === $exitCode) {
+                        $servers = $this->getServers(false);
+                        $this->log("Error validating job servers, please check server address.(job servers: $servers)");
+                        $this->quit($exitCode);
+                    } elseif (self::CODE_NORMAL_EXITED !== $exitCode) {
+                        $this->log("Helper process exited with non-zero exit code [$exitCode].");
+                        $this->quit($exitCode);
+                    }
                 }
+                break;
+        }
+    }
 
-                // no received anything jobs. sleep 5 seconds
-                if ($gmWorker->returnCode() === GEARMAN_NO_JOBS) {
-                    if ($this->stopWork) {
-                        break;
-                    }
-                    $this->log('No received anything job.(sleep 5s)', self::LOG_CRAZY);
-                    sleep(5);
-                    continue;
-                }
+    /**
+     * Forked method that watch the worker code and checks it if desired
+     * @old validateWorkers()
+     */
+    protected function startWatchModify()
+    {
+        if ($this->config['watch_modify'] && ($loaderFile = $this->config['loader_file'])) {
+            $lastCheckTime = 0;
+            $checkInterval = $this->config['watch_modify_interval'];
 
-                // if (!@$gmWorker->wait()) {
-                if (!$gmWorker->wait()) {
-                    // GearmanWorker was called with no connections.
-                    if ($gmWorker->returnCode() === GEARMAN_NO_ACTIVE_FDS) { // code: 7
-                        if ($this->stopWork) {
-                            break;
-                        }
-                        $this->log('We are not connected to any servers, so wait a bit before trying to reconnect.(sleep 5s)', self::LOG_CRAZY);
-                        sleep(5);
-                        continue;
-                    }
+            $this->log("Running loop to watch modify(interval:{$checkInterval}s) for 'loader_file': $loaderFile", self::LOG_DEBUG);
 
-                    if ($gmWorker->returnCode() === GEARMAN_TIMEOUT) { // code: 47
-                        $this->log("Timeout({$wkrTimeout}s). Waiting for next job...", self::LOG_CRAZY);
-                        continue;
-                    }
+            while (!$this->stopWork) {
+                // $maxTime = 0;
+                $mdfTime = filemtime($loaderFile);
+                // $maxTime = max($maxTime, $mdfTime);
 
-                    $this->log("Worker Error: {$gmWorker->error()}", self::LOG_DEBUG);
+                $this->log("'loader_file': {$loaderFile} - MODIFY TIME: $mdfTime,LAST CHECK TIME: $lastCheckTime", self::LOG_DEBUG);
+
+                if ($lastCheckTime && $mdfTime > $lastCheckTime) {
+                    clearstatcache();
+                    $this->log("New code modify found. Sending SIGHUP(reload) to master(PID:{$this->masterPid})", self::LOG_PROC_INFO);
+                    $this->sendSignal($this->masterPid, SIGHUP);
                     break;
                 }
-            }
 
-            $runtime = time() - $start;
-
-            // Check the worker running time of the current child. If it has been too long, stop working.
-            if ($this->maxLifetime > 0 && ($runtime > $this->maxLifetime)) {
-                $this->log("Worker have been running too long time({$runtime}s), exiting", self::LOG_WORKER_INFO);
-                $this->stopWork = true;
-            }
-
-            if ($this->jobExecCount >= $maxRun) {
-                $this->log("Ran $this->jobExecCount jobs which is over the maximum($maxRun), exiting and restart", self::LOG_WORKER_INFO);
-                $this->stopWork = true;
+                $lastCheckTime = time();
+                sleep($checkInterval);
             }
         }
 
-        return $gmWorker->unregisterAll() ? 0 : -1;
+        $this->log('Helper stopping', self::LOG_PROC_INFO);
+
+        $this->quit();
     }
 
     /**
@@ -157,51 +211,140 @@ class GwManager extends WorkerManager
     }
 
     /**
-     * Wrapper function handler for all registered functions
-     * This allows us to do some nice logging when jobs are started/finished
-     * @param GearmanJob $job
-     * @return bool
+     * {@inheritDoc}
      */
-    public function doJob($job)
+    protected function startWorker($jobs, $isFirst = true)
     {
-        $h = $job->handle();
-        $wl = $job->workload();
-        $name = $job->functionName();
+        $this->isHelper = false;
 
-        if (!$handler = $this->getHandler($name)) {
-            $this->log("doJob: ($h) Unknown job, The job name $name is not registered.", self::LOG_ERROR);
-            return false;
+        parent::startWorker($jobs, $isFirst);
+    }
+
+    /**
+     * stop Helper process
+     */
+    protected function stopHelper()
+    {
+        if ($pid = $this->helperPid) {
+            $this->log("Stopping helper(PID:$pid) ...", self::LOG_PROC_INFO);
+
+            $this->helperPid = 0;
+            $this->killProcess($pid, SIGKILL);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function registerSignals($isMaster = true)
+    {
+        if ($isMaster) {
+            pcntl_signal(SIGCONT, array($this, 'signalHandler'));
         }
 
-        $e = $ret = null;
+        parent::registerSignals($isMaster);
+    }
 
-        $this->log("doJob: ($h) Starting job: $name", self::LOG_WORKER_INFO);
-        $this->log("doJob: ($h) Job $name workload: $wl", self::LOG_DEBUG);
-        $this->trigger(self::EVENT_BEFORE_WORK, [$job]);
+    /**
+     * Handles signals
+     * @param int $sigNo
+     */
+    public function signalHandler($sigNo)
+    {
+        static $stopCount = 0;
 
-        // Run the job handler here
-        try {
-            if ($handler instanceof JobInterface) {
-                $jobClass = get_class($handler);
-                $this->log("doJob: ($h) Calling Job object handler($jobClass) do the job: $name.", self::LOG_WORKER_INFO);
-                $ret = $handler->run($job->workload(), $job, $this);
-            } else {
-                $jobFunc = is_string($handler) ? $handler : get_class($handler);
-                $this->log("doJob: ($h) Calling function handler($jobFunc) do the job: $name.", self::LOG_WORKER_INFO);
-                $ret = $handler($job->workload(), $job, $this);
+        if ($this->isMaster) {
+            switch ($sigNo) {
+                case SIGCONT:
+                    $this->log('Validation through, continue(signal:SIGCONT)...', self::LOG_PROC_INFO);
+                    $this->waitForSignal = false;
+                    break;
+                case SIGINT: // Ctrl + C
+                case SIGTERM:
+                    $sigText = $sigNo === SIGINT ? 'SIGINT' : 'SIGTERM';
+                    $this->log("Shutting down(signal:$sigText)...", self::LOG_PROC_INFO);
+                    $this->stopWork = true;
+                    $this->meta['stop_time'] = time();
+                    $stopCount++;
+
+                    if ($stopCount < 5) {
+                        $this->stopWorkers();
+                    } else {
+                        $this->log('Stop workers failed by(signal:SIGTERM), force kill workers by(signal:SIGKILL)', self::LOG_PROC_INFO);
+                        $this->stopWorkers(SIGKILL);
+                    }
+                    break;
+                case SIGHUP:
+                    $this->log('Restarting workers(signal:SIGHUP)', self::LOG_PROC_INFO);
+                    $this->openLogFile();
+                    $this->stopWorkers();
+                    break;
+                case SIGUSR1: // reload workers and reload handlers
+                    $this->log('Reloading workers and handlers(signal:SIGUSR1)', self::LOG_PROC_INFO);
+                    $this->stopWork = true;
+                    $this->start();
+                    break;
+                case SIGUSR2:
+                    break;
+                default:
+                    // handle all other signals
             }
-        } catch (\Exception $e) {
-            $this->log("doJob: ($h) Failed to do the job: $name. Error: " . $e->getMessage(), self::LOG_ERROR);
-            $this->trigger(self::EVENT_AFTER_ERROR, [$job, $e]);
+
+        } else {
+            $this->stopWork = true;
+            $this->meta['stop_time'] = time();
+            $this->log("Received 'stopWork' signal(signal:SIGTERM), will be exiting.", self::LOG_PROC_INFO);
+        }
+    }
+
+
+    /**
+     * Handles anything we need to do when we are shutting down
+     */
+    public function __destruct()
+    {
+        // master
+        if ($this->isMaster) {
+            // stop Helper
+            $this->stopHelper();
+
+            // delPidFile
+            $this->delPidFile();
+
+            // close logFileHandle
+            if ($this->logFileHandle) {
+                fclose($this->logFileHandle);
+
+                $this->logFileHandle = null;
+            }
+
+            $this->log('All workers stopped', self::LOG_PROC_INFO);
+            $this->log("Manager stopped\n", self::LOG_PROC_INFO);
+
+            // helper
+        } elseif ($this->isHelper) {
+            $this->log("Helper stopped", self::LOG_PROC_INFO);
+            // worker
+        } elseif ($this->isWorker) {
+            // $this->log("Worker stopped(PID:{$this->pid})", self::LOG_PROC_INFO);
         }
 
-        $this->jobExecCount++;
+        $this->clear($this->isMaster);
+    }
 
-        if (!$e) {
-            $this->log("doJob: ($h) Completed Job: $name", self::LOG_WORKER_INFO);
-            $this->trigger(self::EVENT_AFTER_WORK, [$job, $ret]);
-        }
+    /**
+     * @return string
+     */
+    public function getPidRole()
+    {
+        return $this->isMaster ? 'Master' : ($this->isHelper ? 'Helper' : 'Worker');
+    }
 
-        return $ret;
+    /**
+     * @param \Closure $loader
+     */
+    public function setHandlersLoader(\Closure $loader)
+    {
+        $this->handlersLoader = $loader;
     }
 }

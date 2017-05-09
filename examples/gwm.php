@@ -7,7 +7,7 @@
  * gearman worker manager
  */
 
-use \inhere\gearman\GwManager;
+use \inhere\gearman\Manager;
 
 error_reporting(E_ALL | E_STRICT);
 
@@ -19,15 +19,15 @@ $config = [
     'daemon' => false,
     'pid_file' => __DIR__ . '/manager.pid',
 
-    'log_level' => GwManager::LOG_DEBUG,
+    'log_level' => Manager::LOG_DEBUG,
     'log_file' => __DIR__ . '/workers.log',
 
     'loader_file' => __DIR__ . '/job_handlers.php',
 ];
 
-$mgr = new GwManager($config);
+$mgr = new Manager($config);
 
-$mgr->setHandlersLoader(function (GwManager $mgr)
+$mgr->setHandlersLoader(function (Manager $mgr)
 {
     require __DIR__ . '/job_handlers.php';
 });

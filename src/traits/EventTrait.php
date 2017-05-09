@@ -52,4 +52,20 @@ trait EventTrait
 
         return call_user_func_array($cb, $args);
     }
+
+    /**
+     * @param $name
+     * @return null
+     */
+    public function off($name)
+    {
+        $cb = null;
+
+        if (isset($this->_events[$name])) {
+            $cb = $this->_events[$name];
+            unset($this->_events[$name]);
+        }
+
+        return $cb;
+    }
 }

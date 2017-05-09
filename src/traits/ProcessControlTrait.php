@@ -45,19 +45,6 @@ trait ProcessControlTrait
     }
 
     /**
-     * stop Helper process
-     */
-    protected function stopHelper()
-    {
-        if ($pid = $this->helperPid) {
-            $this->log("Stopping helper(PID:$pid) ...", self::LOG_PROC_INFO);
-
-            $this->helperPid = 0;
-            $this->killProcess($pid, SIGKILL);
-        }
-    }
-
-    /**
      * reloadWorkers
      * @param $masterPid
      */
@@ -164,7 +151,6 @@ trait ProcessControlTrait
             pcntl_signal(SIGINT, array($this, 'signalHandler'));
             pcntl_signal(SIGUSR1, array($this, 'signalHandler'));
             pcntl_signal(SIGUSR2, array($this, 'signalHandler'));
-            pcntl_signal(SIGCONT, array($this, 'signalHandler'));
             pcntl_signal(SIGHUP, array($this, 'signalHandler'));
         } else {
             $this->log("Registering signal handlers for current worker process", self::LOG_DEBUG);
@@ -183,16 +169,8 @@ trait ProcessControlTrait
     {
         static $stopCount = 0;
 
-        if ($this->isWorker) {
-            $this->stopWork = true;
-            $this->meta['stop_time'] = time();
-            $this->log("Received 'stopWork' signal(signal:SIGTERM), will be exiting.", self::LOG_PROC_INFO);
-        } elseif ($this->isMaster) {
+        if ($this->isMaster) {
             switch ($sigNo) {
-                case SIGCONT:
-                    $this->log('Validation through, continue(signal:SIGCONT)...', self::LOG_PROC_INFO);
-                    $this->waitForSignal = false;
-                    break;
                 case SIGINT: // Ctrl + C
                 case SIGTERM:
                     $sigText = $sigNo === SIGINT ? 'SIGINT' : 'SIGTERM';
@@ -223,6 +201,11 @@ trait ProcessControlTrait
                 default:
                     // handle all other signals
             }
+
+        } else {
+            $this->stopWork = true;
+            $this->meta['stop_time'] = time();
+            $this->log("Received 'stopWork' signal(signal:SIGTERM), will be exiting.", self::LOG_PROC_INFO);
         }
     }
 

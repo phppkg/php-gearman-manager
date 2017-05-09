@@ -22,8 +22,11 @@ interface ManagerInterface
     const EVENT_BEFORE_PUSH = 'beforePush';
     const EVENT_AFTER_PUSH = 'afterPush';
 
+    const EVENT_MASTER_START = 'masterStart';
+    const EVENT_MASTER_Stop = 'masterStop';
+
     const EVENT_WORKER_START = 'workerStart';
-    const EVENT_WORKER_EXIT = 'workerExit';
+    const EVENT_WORKER_Stop = 'workerStop';
 
     const EVENT_BEFORE_WORK = 'beforeWork';
     const EVENT_AFTER_WORK = 'afterWork';

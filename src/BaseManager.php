@@ -14,10 +14,10 @@ use inhere\gearman\jobs\JobInterface;
 use inhere\gearman\traits;
 
 /**
- * Class WorkerManager
+ * Class BaseManager
  * @package inhere\gearman
  */
-abstract class WorkerManager implements ManagerInterface
+abstract class BaseManager implements ManagerInterface
 {
     use traits\EventTrait;
     use traits\LogTrait;
@@ -57,7 +57,7 @@ abstract class WorkerManager implements ManagerInterface
      * Verbosity level for the running script. Set via -v option
      * @var int
      */
-    protected $verbose = 0;
+    protected $verbose = 4;
 
     /**
      * @var bool
@@ -83,19 +83,9 @@ abstract class WorkerManager implements ManagerInterface
     protected $masterPid = 0;
 
     /**
-     * The PID of the helper process
-     * @var int
-     */
-    protected $helperPid = 0;
-    /**
      * @var bool
      */
     protected $isMaster = false;
-
-    /**
-     * @var bool
-     */
-    protected $isHelper = false;
 
     /**
      * @var bool
@@ -106,12 +96,6 @@ abstract class WorkerManager implements ManagerInterface
      * @var string
      */
     protected $pidFile;
-
-    /**
-     * wait response for process signal
-     * @var bool
-     */
-    protected $waitForSignal = false;
 
     /**
      * When true, workers will stop look for jobs and the parent process will kill off all running workers
@@ -168,11 +152,6 @@ abstract class WorkerManager implements ManagerInterface
     ///////// other //////////
 
     /**
-     * @var \Closure
-     */
-    private $handlersLoader;
-
-    /**
      * The array of meta for manager
      * @var string[]
      */
@@ -223,7 +202,7 @@ abstract class WorkerManager implements ManagerInterface
         'max_run_jobs' => 2000,
 
         // log
-        'log_level' => 0,
+        'log_level' => 4,
         // 'day' 'hour', if is empty, not split.
         'log_split' => 'day',
         // will write log by `syslog()`
@@ -524,11 +503,6 @@ abstract class WorkerManager implements ManagerInterface
      */
     public function start()
     {
-        // load all job handlers
-        if ($loader = $this->handlersLoader) {
-            $loader($this);
-        }
-
         // check
         if (!$this->handlers) {
             $this->stdout("ERROR: No jobs handler found. please less register one.\n");
@@ -547,10 +521,6 @@ abstract class WorkerManager implements ManagerInterface
         // Register signal listeners `pcntl_signal_dispatch()`
         $this->registerSignals();
 
-        // fork a Helper process
-        // $this->startHelper('startWatcher');
-        $this->startHelper();
-
         $this->log("Started manager with pid {$this->pid}, Current script owner: " . get_current_user(), self::LOG_PROC_INFO);
 
         // start workers and set up a running environment
@@ -559,10 +529,9 @@ abstract class WorkerManager implements ManagerInterface
         // start worker monitor
         $this->startWorkerMonitor();
 
-        // stop Helper
-        $this->stopHelper();
-
         $this->log('Stopping Manager ...', self::LOG_PROC_INFO);
+
+        $this->quit();
     }
 
     /**
@@ -606,93 +575,6 @@ abstract class WorkerManager implements ManagerInterface
 
             $this->log("User set to {$username}", self::LOG_PROC_INFO);
         }
-    }
-
-    /**
-     * Forks the process and runs the given method. The parent then waits
-     * for the worker child process to signal back that it can continue
-     *
-     * param   string $method Class method to run after forking @see `startWatcher()`
-     *
-     * @old forkOwner()
-     */
-    protected function startHelper()
-    {
-        $this->waitForSignal = true;
-        $pid = pcntl_fork();
-
-        switch ($pid) {
-            case 0: // at workers(helper process)
-                $this->setProcessTitle("php-gwm: helper process");
-                $this->isMaster = false;
-                $this->isHelper = true;
-                $this->masterPid = $this->pid;
-                $this->pid = getmypid();
-
-                $this->validateDriverWorkers();
-                $this->startWatchModify();
-                break;
-            case -1:
-                $this->log('Failed to fork helper process', self::LOG_ERROR);
-                $this->stopWork = true;
-                break;
-            default: // at parent
-                $this->log("Helper process forked with PID:$pid", self::LOG_PROC_INFO);
-                $this->helperPid = $pid;
-
-                while ($this->waitForSignal && !$this->stopWork) {
-                    usleep(5000);
-
-                    // receive and dispatch sig
-                    pcntl_signal_dispatch();
-                    pcntl_waitpid($pid, $status, WNOHANG);
-                    $exitCode = pcntl_wexitstatus($status);
-
-                    if (self::CODE_CONNECT_ERROR === $exitCode) {
-                        $servers = $this->getServers(false);
-                        $this->log("Error validating job servers, please check server address.(job servers: $servers)");
-                        $this->quit($exitCode);
-                    } elseif (self::CODE_NORMAL_EXITED !== $exitCode) {
-                        $this->log("Helper process exited with non-zero exit code [$exitCode].");
-                        $this->quit($exitCode);
-                    }
-                }
-                break;
-        }
-    }
-
-    /**
-     * Forked method that watch the worker code and checks it if desired
-     * @old validateWorkers()
-     */
-    protected function startWatchModify()
-    {
-        if ($this->config['watch_modify'] && ($loaderFile = $this->config['loader_file'])) {
-            $lastCheckTime = 0;
-            $checkInterval = $this->config['watch_modify_interval'];
-
-            $this->log("Running loop to watch modify(interval:{$checkInterval}s) for 'loader_file': $loaderFile", self::LOG_DEBUG);
-
-            while (!$this->stopWork) {
-                // $maxTime = 0;
-                $mdfTime = filemtime($loaderFile);
-                // $maxTime = max($maxTime, $mdfTime);
-
-                $this->log("'loader_file': {$loaderFile} - MODIFY TIME: $mdfTime,LAST CHECK TIME: $lastCheckTime", self::LOG_DEBUG);
-
-                if ($lastCheckTime && $mdfTime > $lastCheckTime) {
-                    clearstatcache();
-                    $this->log("New code modify found. Sending SIGHUP(reload) to master(PID:{$this->masterPid})", self::LOG_PROC_INFO);
-                    $this->sendSignal($this->masterPid, SIGHUP);
-                    break;
-                }
-
-                $lastCheckTime = time();
-                sleep($checkInterval);
-            }
-        }
-
-        $this->quit();
     }
 
     /**
@@ -767,7 +649,7 @@ abstract class WorkerManager implements ManagerInterface
         switch ($pid) {
             case 0: // at workers
                 $this->isWorker = true;
-                $this->isMaster = $this->isHelper = false;
+                $this->isMaster = false;
                 $this->masterPid = $this->pid;
                 $this->pid = getmypid();
                 $this->meta['start_time'] = time();
@@ -810,18 +692,14 @@ abstract class WorkerManager implements ManagerInterface
     }
 
     /**
-     * Starts a worker for the driver
+     * Starts a worker for the PECL library
      *
      * @param   array $jobs List of worker functions to add
      * @param   array $timeouts list of worker timeouts to pass to server
-     * @return  int             The exit status code
+     * @return  int The exit status code
+     * @throws \GearmanException
      */
     abstract protected function startDriverWorker(array $jobs, array $timeouts = []);
-
-    /**
-     * Validates the worker handlers
-     */
-    abstract protected function validateDriverWorkers();
 
     /**
      * Begin monitor workers
@@ -884,14 +762,6 @@ abstract class WorkerManager implements ManagerInterface
 //////////////////////////////////////////////////////////////////////
 /// job handle methods
 //////////////////////////////////////////////////////////////////////
-
-    /**
-     * @param \Closure $loader
-     */
-    public function setHandlersLoader(\Closure $loader)
-    {
-        $this->handlersLoader = $loader;
-    }
 
     /**
      * add a job handler (alias of the `addHandler`)
@@ -1179,8 +1049,6 @@ EOF;
     {
         // master
         if ($this->isMaster) {
-            // stop Helper
-            $this->stopHelper();
 
             // delPidFile
             $this->delPidFile();
@@ -1195,9 +1063,6 @@ EOF;
             $this->log('All workers stopped', self::LOG_PROC_INFO);
             $this->log("Manager stopped\n", self::LOG_PROC_INFO);
 
-            // helper
-        } elseif ($this->isHelper) {
-            $this->log("Helper stopped", self::LOG_PROC_INFO);
             // worker
         } elseif ($this->isWorker) {
             // $this->log("Worker stopped(PID:{$this->pid})", self::LOG_PROC_INFO);
@@ -1209,6 +1074,30 @@ EOF;
 //////////////////////////////////////////////////////////////////////
 /// getter/setter method
 //////////////////////////////////////////////////////////////////////
+
+    /**
+     * @return array
+     */
+    public static function getLevels()
+    {
+        return self::$levels;
+    }
+
+    /**
+     * @return array
+     */
+    public static function getDefaultJobOpt(): array
+    {
+        return self::$defaultJobOpt;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFullScript(): string
+    {
+        return $this->fullScript;
+    }
 
     /**
      * @return string
@@ -1275,6 +1164,14 @@ EOF;
     }
 
     /**
+     * @return string
+     */
+    public function getPidRole()
+    {
+        return $this->isMaster ? 'Master' : 'Worker';
+    }
+
+    /**
      * @param string $pidFile
      * @return int
      */
@@ -1301,14 +1198,6 @@ EOF;
         }
 
         return $servers;
-    }
-
-    /**
-     * @return array
-     */
-    public static function getLevels()
-    {
-        return self::$levels;
     }
 
     /**

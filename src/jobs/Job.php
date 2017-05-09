@@ -8,7 +8,7 @@
 
 namespace inhere\gearman\jobs;
 
-use inhere\gearman\WorkerManager;
+use inhere\gearman\ManagerInterface;
 
 /**
  * Class Job
@@ -22,7 +22,7 @@ abstract class Job implements JobInterface
     protected $context;
 
     /**
-     * @var WorkerManager
+     * @var ManagerInterface
      */
     protected $manager;
 
@@ -30,10 +30,10 @@ abstract class Job implements JobInterface
      * do the job
      * @param string $workload
      * @param \GearmanJob $job
-     * @param WorkerManager $manager
+     * @param ManagerInterface $manager
      * @return mixed
      */
-    public function run($workload, \GearmanJob $job, WorkerManager $manager)
+    public function run($workload, \GearmanJob $job, ManagerInterface $manager)
     {
         $this->manager = $manager;
 

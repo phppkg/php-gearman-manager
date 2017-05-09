@@ -7,6 +7,7 @@
  */
 
 namespace inhere\gearman\client;
+use inhere\gearman\traits\EventTrait;
 
 /**
  * Class JobClient
@@ -24,10 +25,26 @@ namespace inhere\gearman\client;
  */
 class JobClient
 {
+    use EventTrait;
+
+    /**
+     * Events list
+     */
+    const EVENT_BEFORE_DO = 'beforeDo';
+    const EVENT_AFTER_DO = 'afterDo';
+
+    const EVENT_BEFORE_ADD = 'beforeAdd';
+    const EVENT_AFTER_ADD = 'afterAdd';
+
     /**
      * @var bool
      */
     public $enable = true;
+
+    /**
+     * @var bool
+     */
+    public $debug = false;
 
     /**
      * @var \GearmanClient
@@ -69,7 +86,7 @@ class JobClient
      */
     public function __construct(array $config = [])
     {
-        $properties = ['enable', 'servers', 'serializer'];
+        $properties = ['enable', 'debug', 'servers', 'serializer'];
 
         foreach ($properties as $property) {
             if (isset($config[$property])) {
@@ -114,6 +131,40 @@ class JobClient
     }
 
     /**
+     * do frontend job
+     * @param $funcName
+     * @param $workload
+     * @param null $unique
+     * @param string $clientMethod
+     * @return mixed
+     */
+    public function doJob($funcName, $workload, $unique = null, $clientMethod = 'doNormal')
+    {
+        if (!$this->enable) {
+            return null;
+        }
+
+        $this->trigger(self::EVENT_BEFORE_DO, [$funcName, $workload, $clientMethod]);
+
+        if (is_array($workload) || is_object($workload)) {
+            if ($this->serializer === 'json') {
+                $workload = json_encode($workload);
+            } elseif (is_callable($this->serializer)) { // custom serializer
+                $workload = call_user_func($this->serializer, $workload);
+            } else { //  default use 'php' -- serialize
+                $workload = serialize($workload);
+            }
+        }
+
+        $result = $this->client->$clientMethod($funcName, $workload, $unique);
+
+        $this->trigger(self::EVENT_AFTER_DO, [$funcName, $workload, $result]);
+
+        return $result;
+    }
+
+    /**
+     * add background job
      * @param string $funcName
      * @param string $workload
      * @param null $unique
@@ -125,6 +176,8 @@ class JobClient
         if (!$this->enable) {
             return null;
         }
+
+        $this->trigger(self::EVENT_BEFORE_ADD, [$funcName, $workload, $clientMethod]);
 
         if (is_array($workload) || is_object($workload)) {
             if ($this->serializer === 'json') {
@@ -145,6 +198,8 @@ class JobClient
         }
 
         $stat = $this->client->jobStatus($ret);
+
+        $this->trigger(self::EVENT_BEFORE_ADD, [$funcName, $workload, $stat]);
 
         return !$stat[0];// bool
     }
@@ -193,7 +248,16 @@ class JobClient
             return null;
         }
 
-        if (in_array($name, self::$frontMethods + self::$backMethods, true)) {
+        if (in_array($name, self::$frontMethods, true)) {
+            return $this->doJob(
+                $params[0],
+                isset($params[1]) ? $params[1] : '',
+                isset($params[2]) ? $params[2] : null,
+                $name
+            );
+        }
+
+        if (in_array($name, self::$backMethods, true)) {
             return $this->addJob(
                 $params[0],
                 isset($params[1]) ? $params[1] : '',
@@ -214,14 +278,21 @@ class JobClient
      * @param string $logString
      * @param bool $nl
      * @param bool|int $quit
+     * @return null
      */
     protected function stdout($logString, $nl = true, $quit = false)
     {
+        if (!$this->debug) {
+            return null;
+        }
+
         fwrite(\STDOUT, $logString . ($nl ? PHP_EOL : ''));
 
         if (($isTrue = true === $quit) || is_int($quit)) {
             $code = $isTrue ? 0 : $quit;
             exit($code);
         }
+
+        return null;
     }
 }
