@@ -16,7 +16,8 @@ while ($i <= 100) {
 
     $length = $i; // ■ = #
     $tfKb = ceil($i*0.95);
-    // printf("\r[%-100s] %d%% (%2d/%2d kb)", str_repeat('#', $length) . '>', $length, $tfKb, $i * 10);
+//     printf("\r[%-100s] %d%% (%2d/%2d kb)", str_repeat('#', $length) . '>', $length, $tfKb, $i * 10);
+     // mac is not support there are chars.
     // printf("\r[%-100s] %d%% (%2d/%2d kb)", str_repeat(chr(22), $length) . '>', $length, $tfKb, $i * 10); // ■
     // printf("\r[%-100s] %d%% (%2d/%2d kb)", str_repeat(chr(1), $length) . '>', $length, $tfKb, $i * 10);// ☺
     // printf("\r[%-100s] %d%% (%2d/%2d kb)", str_repeat(chr(2), $length) . '>', $length, $tfKb, $i * 10);// ☻

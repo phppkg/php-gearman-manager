@@ -41,8 +41,7 @@ class Telnet
     /**
      * @var int
      */
-    private $port = 80;
-
+    private $port;
 
     /**
      * @var array
@@ -64,11 +63,12 @@ class Telnet
      * Telnet constructor.
      * @param string $host
      * @param int $port
+     * @param array $config
      */
     public function __construct($host = '127.0.0.1', $port = 80, array $config = [])
     {
-        $this->host = $host;
-        $this->port = $port;
+        $this->host = $host ?: '127.0.0.1';
+        $this->port = $port ?: 80;
 
         $this->setConfig($config);
 
@@ -83,6 +83,7 @@ class Telnet
             foreach (self::$availableDrivers as $name => $funcName) {
                 if (function_exists($funcName)) {
                     $driver = $name;
+                    break;
                 }
             }
         }
@@ -90,6 +91,7 @@ class Telnet
         $this->driver = $driver;
         $host = $this->host;
         $port = $this->port;
+        $errNo = $errStr = null;
 
         switch ($driver) {
             case self::DRIVER_SOCKET:
@@ -108,7 +110,10 @@ class Telnet
                     socket_set_nonblock($this->sock);
                 }
 
-                socket_set_timeout($this->sock, $this->config['timeout'], 0);
+                socket_set_option($this->sock, SOL_SOCKET, SO_RCVTIMEO, [
+                    'sec' => $this->config['timeout'],
+                    'usec' => null
+                ]);
                 break;
 
             case self::DRIVER_STREAM:
@@ -140,7 +145,9 @@ class Telnet
     /**
      * send command
      * @param  string $command
-     * @return string|int|false
+     * @param bool $readResult
+     * @param int $readSize
+     * @return false|int|string
      */
     public function command($command, $readResult = true, $readSize = 1024)
     {
@@ -159,16 +166,33 @@ class Telnet
     public function interactive()
     {
         $activeTime = time();
-        echo "welcome !\n: ";
+        $maxTime = $this->config['max_wait_time'];
+
+        echo "welcome! please input command.\n ";
 
         while (true) {
-            if ($input = fgets(\STDIN)) {
-                echo $this->command($input) . PHP_EOL;
+            echo "> ";
+            if ($cmd = trim(fgets(\STDIN))) {
+                // echo "input command: $cmd\n";
+                if ($cmd === 'quit' || $cmd === 'exit') {
+                    echo "Quit. Bye\n";
+                    break;
+                }
+
+                echo $this->command($cmd) . PHP_EOL;
+            }
+
+            if (time() - $activeTime >= $maxTime) {
+                echo "connection timeout.\n";
+
+                break;
             }
 
             $activeTime = time();
             usleep(50000);
         }
+
+        $this->close();
     }
 
     /**
@@ -214,7 +238,7 @@ class Telnet
     }
 
     /**
-     * @return array
+     * @return resource
      */
     public function getSock()
     {

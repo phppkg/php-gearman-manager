@@ -1,4 +1,9 @@
 <?php
+/**
+ * usage: php examples/telnet.php 127.0.0.1 4730
+ */
+
+use inhere\gearman\Helper;
 
 error_reporting(E_ALL | E_STRICT);
 
@@ -11,6 +16,7 @@ $opts = getopt('h', ['help']);
 
 if (isset($opts['h']) || isset($opts['help'])) {
     $script = array_shift($argv);
+    $script = Helper::addColor($script, Helper::$styles['light_green']);
     $help = <<<EOF
 Start a telnet client.
 
@@ -29,4 +35,7 @@ $port = isset($argv[2]) ? $argv[2] : 80;
 
 $tt = new \inhere\gearman\tools\Telnet($host, $port);
 
-echo $tt->command('status');
+// var_dump($tt);die;
+
+//echo $tt->command('status');
+$tt->interactive();

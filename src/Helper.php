@@ -93,40 +93,51 @@ class Helper
         echo preg_replace("/Array\n\s+\(/", 'Array (', $string);
     }
 
-    private static $_colors = [
-        'light_red'    => "[1;31m",
-        'light_green'  => "[1;32m",
-        'yellow'       => "[1;33m",
-        'light_blue'   => "[1;34m",
-        'magenta'      => "[1;35m",
-        'light_cyan'   => "[1;36m",
-        'white'        => "[1;37m",
-        'normal'       => "[0m",
-        'black'        => "[0;30m",
-        'red'          => "[0;31m",
-        'green'        => "[0;32m",
-        'brown'        => "[0;33m",
-        'blue'         => "[0;34m",
-        'cyan'         => "[0;36m",
-        'bold'         => "[1m",
-        'underscore'   => "[4m",
-        'reverse'      => "[7m",
+    /**
+     * some styles
+     * @var array
+     */
+    public static $styles = [
+        'light_red'    => '1;31',
+        'light_green'  => '1;32',
+        'yellow'       => '1;33',
+        'light_blue'   => '1;34',
+        'magenta'      => '1;35',
+        'light_cyan'   => '1;36',
+        'white'        => '1;37',
+        'normal'        => '0',
+        'black'        => '0;30',
+        'red'          => '0;31',
+        'green'        => '0;32',
+        'brown'        => '0;33',
+        'blue'         => '0;34',
+        'cyan'         => '0;36',
+        'bold'         => '1',
+        'underscore'   => '4',
+        'reverse'      => '7',
     ];
 
-    public static function cliColor($text, $color = 'normal', $return = true)
+    /**
+     * @param $text
+     * @param string $style
+     * @param bool $return
+     * @return bool|string
+     */
+    public static function addColor($text, $style = '0', $return = true)
     {
-        $out = self::$_colors[$color];
-
-        if(!isset(self::$_colors[$color])) {
-            $out = "[0m";
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $result = $text;
+        } else {
+//            $result = chr(27). "$out$text" . chr(27) . chr(27) . "[0m". chr(27);
+            $result = "\033[{$style}m{$text}\033[0m";
         }
 
-        $result = chr(27). "$out$text" . chr(27) . chr(27) . "[0m". chr(27);
-
-        if($return ){
+        if($return){
             return $result;
         }
 
         echo $result;
+
+        return true;
     }
 }
