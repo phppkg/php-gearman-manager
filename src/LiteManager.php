@@ -37,7 +37,7 @@ class LiteManager extends BaseManager
         $this->debug("The gearman worker started");
 
         foreach ($this->getServers() as $s) {
-            $this->log("Adding a job server: $s", self::LOG_WORKER_INFO);
+            $this->log("Adding a job server: $s", self::LOG_DEBUG);
 
             // see: https://bugs.php.net/bug.php?id=63041
             try {
@@ -52,7 +52,7 @@ class LiteManager extends BaseManager
 
         foreach ($jobs as $job) {
             $timeout = $timeouts[$job] >= 0 ? $timeouts[$job] : 0;
-            $this->log("Adding job handler to worker, Name: $job Timeout: $timeout", self::LOG_WORKER_INFO);
+            $this->log("Adding job handler to worker, Name: $job Timeout: $timeout", self::LOG_CRAZY);
             $gmWorker->addFunction($job, [$this, 'doJob'], null, $timeout);
         }
 

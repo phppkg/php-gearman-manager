@@ -6,7 +6,6 @@
  * Time: 下午11:03
  */
 
-declare(ticks = 1);
 error_reporting(E_ALL | E_STRICT);
 
 require __DIR__ . '/simple-loader.php';
@@ -38,13 +37,13 @@ $client = new \inhere\gearman\client\JobClient([
     'servers' => isset($opts['s']) ? $opts['s'] : (isset($opts['server']) ? $opts['server'] : ''),
 ]);
 
-$ret[] = $client->doNormal('reverse_string', 'hello a');
-$ret[] = $client->doBackground('reverse_string', 'hello b');
-$ret[] = $client->doBackground('reverse_string', 'hello c');
-$ret[] = $client->doHighBackground('reverse_string', 'hello d');
+$ret[] = $client->doNormal('test_reverse_string', 'hello a');
+$ret[] = $client->doBackground('test_reverse_string', 'hello b');
+$ret[] = $client->doBackground('test_reverse_string', 'hello c');
+$ret[] = $client->doHighBackground('test_reverse_string', 'hello d');
 
 $ret[] = $client->doBackground('test_echo', 'hello welcome');
 
-$ret[] = $client->doBackground('echo_job', 'hello welcome!!');
+$ret[] = $client->doBackground('test_echo_job', 'hello welcome!!');
 
 var_dump($ret);

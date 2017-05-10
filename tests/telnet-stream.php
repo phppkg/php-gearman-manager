@@ -5,9 +5,10 @@
  * Date: 2017/5/9
  * Time: 下午10:40
  */
-//$host = 'gearman';
-$host = '127.0.0.1';
-$port = 4730;
+
+$opts = getopt('h:p:');
+$host = isset($opts['h']) ? $opts['h'] : '127.0.0.1';
+$port = isset($opts['p']) ? $opts['p'] : '4730';
 
 $fp = stream_socket_client(
     "tcp://{$host}:{$port}",
@@ -24,12 +25,12 @@ if (!$fp) {
 
     echo "Reading response:\n\n";
 
-    //echo fread($fp, 1024);
-    while ($out = fread($fp, 2048)) {
-        var_dump($out);
-        echo $out;
-    }
+    echo fread($fp, 1024);
 
+    // while ($out = fread($fp, 2048)) {
+    //     echo $out;
+    // }
 
+    echo "Closing\n";
     fclose($fp);
 }

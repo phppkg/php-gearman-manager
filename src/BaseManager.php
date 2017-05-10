@@ -157,12 +157,13 @@ abstract class BaseManager implements ManagerInterface
     ///////// other //////////
 
     /**
-     * The array of meta for manager
+     * The array of meta for manager/worker
      * @var string[]
      */
     protected $meta = [
         'start_time' => 0,
-        'stop_time' => 0,
+        'stop_time'  => 0,
+        'start_times' => 0,
     ];
 
     ///////// config //////////
@@ -241,20 +242,7 @@ abstract class BaseManager implements ManagerInterface
      * @var array
      */
     protected $jobsOpts = [
-        // job name => job config
-        // 下面是两个示例
-        'reverse_string' => [
-            // 至少需要 3 个 worker 去处理这个 job (可能会超过 3 个，会在它和 $doAllWorkerNum 取最大值), 可以同时做其他的 job
-            'worker_num' => 3,
-        ],
-        'sum' => [
-            // 需要 5 个 worker 处理这个 job
-            'worker_num' => 5,
-            // 当设置 focus_on = true, 这些 worker 将专注这一个job
-            'focus_on' => true, // true | false
-            // job 执行超时时间 秒
-            'timeout' => 100,
-        ],
+        // job name => job option // please see self::$defaultJobOpt
     ];
 
 //////////////////////////////////////////////////////////////////////
@@ -673,10 +661,11 @@ abstract class BaseManager implements ManagerInterface
                     shuffle($jobAry);
                 }
 
-                $this->setProcessTitle(
-                    sprintf("php-gwm: worker process%s", $this->getShowName()) .
-                    ($jCount === 1 ? " (focus_on:$jobAry[0])" : '')
-                );
+                $this->setProcessTitle(sprintf(
+                    "php-gwm: worker process%s (%s)",
+                    $this->getShowName(),
+                    ($jCount === 1 ? "focus on:{$jobAry[0]}" : 'do all jobs')
+                ));
                 $this->registerSignals(false);
 
                 if (($splay = $this->get('restart_splay')) > 0) {
@@ -974,10 +963,12 @@ EOF;
      */
     protected function dumpInfo($allInfo = false)
     {
-        if ($allInfo) {
-            $this->stdout("There are all information of the manager:\n" . print_r($this, true));
+         if ($allInfo) {
+            $this->stdout("There are all information of the manager:");
+            Helper::printR($this);
         } else {
-            $this->stdout("There are configure information:" . print_r($this->config, true));
+            $this->stdout("There are configure information:");
+            Helper::printR($this->config);
         }
 
         $this->quit();

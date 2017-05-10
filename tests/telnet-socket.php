@@ -6,9 +6,9 @@
  * Time: 下午11:55
  */
 
-//$host = 'gearman';
-$host = '127.0.0.1';
-$port = 4730;
+$opts = getopt('h:p:');
+$host = isset($opts['h']) ? $opts['h'] : '127.0.0.1';
+$port = isset($opts['p']) ? $opts['p'] : '4730';
 
 /* Create a TCP/IP socket. */
 $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
@@ -40,10 +40,12 @@ echo "OK.\n";
 echo "Reading response:\n\n";
 while ($out = socket_read($socket, 2048)) {
     echo $out;
+    break;
 }
 
-$out = socket_read($socket, 2048);
-echo $out;
+// echo "Reading response:\n\n";
+// $out = socket_read($socket, 2048);
+// echo $out;
 
 
 echo "Closing socket...";

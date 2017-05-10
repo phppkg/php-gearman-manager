@@ -16,6 +16,7 @@ require __DIR__ . '/simple-loader.php';
 date_default_timezone_set('Asia/Shanghai');
 
 $config = [
+    'name' => 'test',
     'daemon' => false,
     'pid_file' => __DIR__ . '/manager.pid',
 

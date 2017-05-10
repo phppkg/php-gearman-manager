@@ -14,6 +14,7 @@ require __DIR__ . '/simple-loader.php';
 date_default_timezone_set('Asia/Shanghai');
 
 $config = [
+    'name' => 'test-lite',
     'daemon' => false,
     'pid_file' => __DIR__ . '/lite-manager.pid',
 

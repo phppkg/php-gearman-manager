@@ -75,34 +75,58 @@ class Helper
         return $result;
     }
 
-    private static $exit = false;
-
     /**
-     * Checks exit signals
-     * @return bool
+     * like print_r
      */
-    public static function isExit()
+    public static function printR()
     {
-        if (function_exists('pcntl_signal')) {
-            // Installs a signal handler
-            static $handled = false;
+        $args = func_get_args();
 
-            if (!$handled) {
-                foreach ([SIGTERM, SIGINT, SIGHUP] as $signal) {
-                    pcntl_signal($signal, function () {
-                        static::$exit = true;
-                    });
-                }
+        ob_start();
 
-                $handled = true;
-            }
-
-            // Checks signal
-            if (!static::$exit) {
-                pcntl_signal_dispatch();
-            }
+        foreach ($args as $arg) {
+            print_r($arg);
         }
 
-        return static::$exit;
+        $string = ob_get_clean();
+
+        echo preg_replace("/Array\n\s+\(/", 'Array (', $string);
+    }
+
+    private static $_colors = [
+        'light_red'    => "[1;31m",
+        'light_green'  => "[1;32m",
+        'yellow'       => "[1;33m",
+        'light_blue'   => "[1;34m",
+        'magenta'      => "[1;35m",
+        'light_cyan'   => "[1;36m",
+        'white'        => "[1;37m",
+        'normal'       => "[0m",
+        'black'        => "[0;30m",
+        'red'          => "[0;31m",
+        'green'        => "[0;32m",
+        'brown'        => "[0;33m",
+        'blue'         => "[0;34m",
+        'cyan'         => "[0;36m",
+        'bold'         => "[1m",
+        'underscore'   => "[4m",
+        'reverse'      => "[7m",
+    ];
+
+    public static function cliColor($text, $color = 'normal', $return = true)
+    {
+        $out = self::$_colors[$color];
+
+        if(!isset(self::$_colors[$color])) {
+            $out = "[0m";
+        }
+
+        $result = chr(27). "$out$text" . chr(27) . chr(27) . "[0m". chr(27);
+
+        if($return ){
+            return $result;
+        }
+
+        echo $result;
     }
 }

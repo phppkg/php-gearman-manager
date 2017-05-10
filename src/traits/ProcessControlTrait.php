@@ -130,6 +130,8 @@ trait ProcessControlTrait
         $this->log("Stopping workers(signal:{$signals[$signal]}) ...", self::LOG_PROC_INFO);
 
         foreach ($this->workers as $pid => $worker) {
+            $this->log("Stopping worker (PID:$pid) (Jobs:".implode(",", $worker['jobs']).")", self::LOG_PROC_INFO);
+
             // send exit signal.
             $this->killProcess($pid, $signal);
         }
