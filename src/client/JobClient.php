@@ -32,9 +32,30 @@ class JobClient
      */
     const EVENT_BEFORE_DO = 'beforeDo';
     const EVENT_AFTER_DO = 'afterDo';
+    const EVENT_ERROR_DO = 'errorDo';
 
     const EVENT_BEFORE_ADD = 'beforeAdd';
     const EVENT_AFTER_ADD = 'afterAdd';
+    const EVENT_ERROR_ADD = 'errorAdd';
+
+    /**
+     * @var array
+     */
+    private static $frontMethods = [
+        'doHigh', 'doNormal', 'doLow',
+    ];
+
+    /**
+     * @var array
+     */
+    private static $backMethods = [
+        'doBackground', 'doHighBackground', 'doLowBackground',
+    ];
+
+    /**
+     * @var \GearmanClient
+     */
+    private $client;
 
     /**
      * @var bool
@@ -47,9 +68,10 @@ class JobClient
     public $debug = false;
 
     /**
-     * @var \GearmanClient
+     * default retry times
+     * @var int
      */
-    private $client;
+    public $retry = 3;
 
     /**
      * allow 'json','php'
@@ -65,20 +87,6 @@ class JobClient
      * ]
      */
     public $servers = [];
-
-    /**
-     * @var array
-     */
-    private static $frontMethods = [
-        'doHigh', 'doNormal', 'doLow',
-    ];
-
-    /**
-     * @var array
-     */
-    private static $backMethods = [
-        'doBackground', 'doHighBackground', 'doLowBackground',
-    ];
 
     /**
      * JobClient constructor.
@@ -167,14 +175,19 @@ class JobClient
      * add background job
      * @param string $funcName
      * @param string $workload
+     * @param int   $retry 添加失败时重试次数
      * @param null $unique
      * @param string $clientMethod
      * @return mixed
      */
-    public function addJob($funcName, $workload, $unique = null, $clientMethod = 'doBackground')
+    public function addJob($funcName, $workload, $retry = 3, $unique = null, $clientMethod = 'doBackground')
     {
         if (!$this->enable) {
             return null;
+        }
+
+        if (in_array($clientMethod, self::$frontMethods, true)) {
+            return $ret;
         }
 
         $this->trigger(self::EVENT_BEFORE_ADD, [$funcName, $workload, $clientMethod]);
@@ -189,19 +202,31 @@ class JobClient
             }
         }
 
+        $result = false;
+        $retry = $retry < 0 ? $this->retry : $retry;
         $this->stdout("push a job to the server.Job: $funcName Type: $clientMethod Data: $workload");
 
-        $ret = $this->client->$clientMethod($funcName, $workload, $unique);
+        try {
+            while ($retry--) {
+                $jobHandle = $this->client->$clientMethod($funcName, $workload, $unique);
+                $stat = $this->client->jobStatus($jobHandle);
 
-        if (in_array($clientMethod, self::$frontMethods, true)) {
-            return $ret;
+                if (!$stat[0]) {
+                    $result = true;
+                    $this->trigger(self::EVENT_BEFORE_ADD, [$funcName, $workload, $stat]);
+                    break;
+                }
+            }
+        } catch (\Exception $e) {
+            $this->trigger(self::EVENT_ERROR_ADD, [$e->getMessage(), $funcName, $workload, null]);
+            return false;
         }
 
-        $stat = $this->client->jobStatus($ret);
+        if (!$result) {
+            $this->trigger(self::EVENT_ERROR_ADD, [$this->client->error(), $funcName, $workload, $stat]);
+        }
 
-        $this->trigger(self::EVENT_BEFORE_ADD, [$funcName, $workload, $stat]);
-
-        return !$stat[0];// bool
+        return $result;// bool
     }
 
     /**

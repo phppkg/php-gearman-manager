@@ -95,4 +95,23 @@ interface ManagerInterface
      * do run manager
      */
     public function start();
+
+    /**
+     * add a job handler
+     * @param string $name The job name
+     * @param callable $handler The job handler
+     * @param array $opts The job options. more @see $jobsOpts property.
+     * options allow: [
+     *  'timeout' => int
+     *  'worker_num' => int
+     *  'focus_on' => int
+     * ]
+     * @return bool
+     */
+    public function addHandler($name, $handler, array $opts = []);
+
+    /**
+     * @param array $config
+     */
+    public function setConfig(array $config);
 }

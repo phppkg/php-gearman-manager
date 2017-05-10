@@ -9,7 +9,26 @@ add some feature:
 - Code is easier to read and understand
 - Can support `reload` `restart` `stop` command
 
-> only support linux system, and require enable `pcntl` `posix_*` 
+> only support linux system, and require enable `pcntl` `posix` 
+
+### config 
+
+there are some config 
+
+```php 
+    // run in the background
+    'daemon' => false,
+
+    // need 4 worker do all jobs
+    'worker_num' => 4,
+
+    // Workers will only live for 1 hour, after will auto restart.
+    'max_lifetime' => 3600,
+    // now, max_lifetime is >= 3600 and <= 4200
+    'restart_splay' => 600,
+    // max run 2000 job of each worker, after will auto restart.
+    'max_run_jobs' => 2000,
+```
 
 ## usage 
 
@@ -18,21 +37,21 @@ add some feature:
 - file: `gwm.php`
 
 ```php
-use \inhere\gearman\GwManager;
+use \inhere\gearman\Manager;
 
 $config = [
     'daemon' => false,
     'pid_file' => __DIR__ . '/manager.pid',
 
-    'log_level' => GwManager::LOG_DEBUG,
+    'log_level' => Manager::LOG_DEBUG,
     'log_file' => __DIR__ . '/workers.log',
 
     'loader_file' => __DIR__ . '/job_handlers.php',
 ];
 
-$mgr = new GwManager($config);
+$mgr = new Manager($config);
 
-$mgr->setHandlersLoader(function (GwManager $mgr)
+$mgr->setHandlersLoader(function (Manager $mgr)
 {
     require __DIR__ . '/job_handlers.php';
 });

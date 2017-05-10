@@ -38,52 +38,27 @@ class Manager extends LiteManager
      */
     private $handlersLoader;
 
-    /**
-     * do start run manager
-     */
-    public function start()
+    protected function beforeStart()
     {
         // load all job handlers
         if ($loader = $this->handlersLoader) {
             $loader($this);
         }
+    }
 
-        // check
-        if (!$this->handlers) {
-            $this->stdout("ERROR: No jobs handler found. please less register one.\n");
-            $this->quit();
-        }
-
-        // 不能直接将属性 isMaster 定义为 True
-        // 这会导致启动后，在执行任意命令时都会删除 pid 文件(触发了__destruct)
-        $this->isMaster = true;
-        $this->meta['start_time'] = time();
-        $this->setProcessTitle(sprintf("php-gwm: master process (%s)", $this->getFullScript()));
-
-        // prepare something for start
-        $this->prepare();
-
-        // Register signal listeners `pcntl_signal_dispatch()`
-        $this->registerSignals();
-
+    protected function beforeStartWorkers()
+    {
         // fork a Helper process
         // $this->startHelper('startWatcher');
         $this->startHelper();
+    }
 
-        $this->log("Started manager with pid {$this->pid}, Current script owner: " . get_current_user(), self::LOG_PROC_INFO);
-
-        // start workers and set up a running environment
-        $this->startWorkers();
-
-        // start worker monitor
-        $this->startWorkerMonitor();
-
+    protected function afterStart()
+    {
         // stop Helper
         $this->stopHelper();
 
-        $this->log('Stopping Manager ...', self::LOG_PROC_INFO);
-
-        $this->quit();
+        parent::afterStart();
     }
 
     /**
@@ -101,7 +76,7 @@ class Manager extends LiteManager
 
         switch ($pid) {
             case 0: // at workers(helper process)
-                $this->setProcessTitle("php-gwm: helper process");
+                $this->setProcessTitle(sprintf("php-gwm: helper process%s", $this->getShowName()));
                 $this->isMaster = false;
                 $this->isHelper = true;
                 $this->masterPid = $this->pid;
@@ -343,7 +318,7 @@ OPTIONS:
   -t SECONDS         Number of seconds gearmand server should wait for a worker to complete work before timing out
 
   -v [LEVEL]         Increase verbosity level by one. eg: -v vv | -v vvv
-  
+
     --no-test        Not add test handler(prefix:test)
 
   -w,--watch         Automatically watch and reload when 'loader_file' has been modify

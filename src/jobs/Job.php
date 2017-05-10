@@ -22,6 +22,16 @@ abstract class Job implements JobInterface
     protected $context;
 
     /**
+     * @var string
+     */
+    protected $id;
+
+    /**
+     * @var string
+     */
+    protected $name;
+
+    /**
      * @var ManagerInterface
      */
     protected $manager;
@@ -35,23 +45,27 @@ abstract class Job implements JobInterface
      */
     public function run($workload, \GearmanJob $job, ManagerInterface $manager)
     {
+        $result = false;
+        $this->id = $job->handle();
+        $this->name = $job->functionName();
         $this->manager = $manager;
 
-        $this->beforeRun();
+        if (false !== $this->beforeRun($workload, $job)) {
+            $result = $this->doRun($workload, $job);
 
-        $ret = $this->doRun($workload, $job);
+            $this->afterRun();
+        }
 
-        $this->afterRun();
-
-        return $ret;
+        return $result;
     }
 
     /**
      * beforeRun
+     * @param $workload
+     * @param \GearmanJob $job
      */
-    protected function beforeRun()
-    {
-    }
+    protected function beforeRun($workload, \GearmanJob $job)
+    {}
 
     /**
      * doRun
@@ -61,12 +75,13 @@ abstract class Job implements JobInterface
      */
     abstract protected function doRun($workload, \GearmanJob $job);
 
+
     /**
      * afterRun
+     * @param mixed $result
      */
-    protected function afterRun()
-    {
-    }
+    protected function afterRun($result)
+    {}
 
     /**
      * @param mixed $context

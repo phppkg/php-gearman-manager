@@ -54,6 +54,11 @@ abstract class BaseManager implements ManagerInterface
     private $command;
 
     /**
+     * @var string
+     */
+    private $name;
+
+    /**
      * Verbosity level for the running script. Set via -v option
      * @var int
      */
@@ -167,6 +172,9 @@ abstract class BaseManager implements ManagerInterface
      * @var array
      */
     protected $config = [
+        // if you setting name, will display on the process name.
+        'name' => '',
+
         'servers' => '127.0.0.1:4730',
 
         // the jobs config, @see $jobs property
@@ -185,21 +193,26 @@ abstract class BaseManager implements ManagerInterface
         'user' => '',
         'group' => '',
 
+        // run in the background
         'daemon' => false,
-        'pid_file' => 'gwm.pid',
 
-        // 需要 4 个 worker 处理所有的 job, 随机处理。
+        // need 4 worker do all jobs
         'worker_num' => 4,
 
-        // job handle timeout seconds
-        'timeout' => 300,
+        'no_test' => false,
 
-        // Workers will only live for 1 hour
+        // Workers will only live for 1 hour, after will auto restart.
         'max_lifetime' => 3600,
         // now, max_lifetime is >= 3600 and <= 4200
         'restart_splay' => 600,
-        // max run 2000 job of each worker. after will auto restart.
+        // max run 2000 job of each worker, after will auto restart.
         'max_run_jobs' => 2000,
+
+        // the master process pid save file
+        'pid_file' => 'gwm.pid',
+
+        // job handle default timeout seconds
+        'timeout' => 300,
 
         // log
         'log_level' => 4,
@@ -280,7 +293,7 @@ abstract class BaseManager implements ManagerInterface
     protected function handleCommandAndConfig()
     {
         $result = Helper::parseParameters([
-            'd', 'daemon', 'w', 'watch', 'h', 'help', 'V', 'version'
+            'd', 'daemon', 'w', 'watch', 'h', 'help', 'V', 'version', 'no-test'
         ]);
         $this->fullScript = implode(' ', $GLOBALS['argv']);
         $this->script = $result[0];
@@ -404,6 +417,11 @@ abstract class BaseManager implements ManagerInterface
             $this->config['daemon'] = true;
         }
 
+        // no test
+        if (isset($opts['no-test'])) {
+            $this->config['no_test'] = true;
+        }
+
         if (isset($opts['v'])) {
             $opts['v'] = $opts['v'] === true ? '' : $opts['v'];
 
@@ -487,6 +505,7 @@ abstract class BaseManager implements ManagerInterface
 
         // init properties
 
+        $this->name = trim($config['name']);
         $this->doAllWorkerNum = $this->config['worker_num'];
         $this->maxLifetime = $this->config['max_lifetime'];
         $this->verbose = $this->config['log_level'];
@@ -498,11 +517,16 @@ abstract class BaseManager implements ManagerInterface
 /// manager methods
 //////////////////////////////////////////////////////////////////////
 
+    protected function beforeStart()
+    {}
+
     /**
      * do start run manager
      */
     public function start()
     {
+        $this->beforeStart();
+
         // check
         if (!$this->handlers) {
             $this->stdout("ERROR: No jobs handler found. please less register one.\n");
@@ -513,15 +537,18 @@ abstract class BaseManager implements ManagerInterface
         // 这会导致启动后，在执行任意命令时都会删除 pid 文件(触发了__destruct)
         $this->isMaster = true;
         $this->meta['start_time'] = time();
-        $this->setProcessTitle(sprintf("php-gwm: master process (%s)", $this->fullScript));
+        $this->setProcessTitle(sprintf("php-gwm: master process%s (%s)", $this->getShowName(), $this->fullScript));
 
         // prepare something for start
         $this->prepare();
 
+        $this->log("Started manager with pid {$this->pid}, Current script owner: " . get_current_user(), self::LOG_PROC_INFO);
+
         // Register signal listeners `pcntl_signal_dispatch()`
         $this->registerSignals();
 
-        $this->log("Started manager with pid {$this->pid}, Current script owner: " . get_current_user(), self::LOG_PROC_INFO);
+        // before Start Workers
+        $this->beforeStartWorkers();
 
         // start workers and set up a running environment
         $this->startWorkers();
@@ -529,6 +556,14 @@ abstract class BaseManager implements ManagerInterface
         // start worker monitor
         $this->startWorkerMonitor();
 
+        $this->afterStart();
+    }
+
+    protected function beforeStartWorkers()
+    {}
+
+    protected function afterStart()
+    {
         $this->log('Stopping Manager ...', self::LOG_PROC_INFO);
 
         $this->quit();
@@ -633,17 +668,18 @@ abstract class BaseManager implements ManagerInterface
                 $this->pid = getmypid();
                 $this->meta['start_time'] = time();
 
-                $this->setProcessTitle("php-gwm: worker process");
-                $this->registerSignals(false);
-
-                if (count($jobAry) > 1) {
+                if (($jCount = count($jobAry)) > 1) {
                     // shuffle the list to avoid queue preference
                     shuffle($jobAry);
                 }
 
-                if (($splay = $this->get('restart_splay')) > 0) {
-                    mt_srand($this->pid);
+                $this->setProcessTitle(
+                    sprintf("php-gwm: worker process%s", $this->getShowName()) .
+                    ($jCount === 1 ? " (focus_on:$jobAry[0])" : '')
+                );
+                $this->registerSignals(false);
 
+                if (($splay = $this->get('restart_splay')) > 0) {
                     $this->maxLifetime += mt_rand(0, $splay);
                     $this->log("The worker adjusted max run time to {$this->maxLifetime} seconds", self::LOG_DEBUG);
                 }
@@ -776,6 +812,11 @@ abstract class BaseManager implements ManagerInterface
 
         if (!$handler && (!is_string($handler) || !is_object($handler))) {
             throw new \InvalidArgumentException("The job [$name] handler data type only allow: string,object");
+        }
+
+        // no test handler
+        if ($this->config['no_test'] && 0 === strpos($name,'test')) {
+            return false;
         }
 
         // get handler type
@@ -918,7 +959,7 @@ OPTIONS:
   -v [LEVEL]         Increase verbosity level by one. eg: -v vv | -v vvv
 
     --no-test        Not add test handler(prefix:test)
-    
+
   -d,--daemon        Daemon, detach and run in the background
   -h,--help          Shows this help information
   -V,--version       Display the version of the manager
@@ -1094,6 +1135,22 @@ EOF;
     }
 
     /**
+     * @return string
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getShowName()
+    {
+        return $this->name ? "({$this->name})" : '';
+    }
+
+    /**
      * @return array
      */
     public function getConfig()
@@ -1257,7 +1314,7 @@ EOF;
      */
     public function setJobsOpts(array $optsList)
     {
-        $this->jobsOpts = $optsList;
+        $this->jobsOpts = array_merge($this->jobsOpts, $optsList);
     }
 
     /**

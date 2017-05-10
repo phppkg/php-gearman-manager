@@ -1,6 +1,8 @@
-# gearman manager
+# gearman worker manager
 
-a php gearman workers manager.
+php 的 gearman workers 管理工具。
+
+可同时启动并管理多个gearman worker,可以设置每个worker的最大执行时间和最大job执行数量，到达设定值后。会自动重启worker，防止进程僵死
 
 Learning reference the project [brianlmoon/GearmanManager](https://github.com/brianlmoon/GearmanManager), Thank you very much for this project.
 
@@ -9,7 +11,7 @@ add some feature:
 - Code is easier to read and understand
 - Can support `reload` `restart` `stop` command
 
-> 只支持 linux 环境， 需要php的 `pcntl` 扩展 和开启 `posix_*` 系列进程控制函数
+> 只支持 linux 环境， 需要php的 `pcntl` `posix` 扩展
 
 ## 工具命令
 
