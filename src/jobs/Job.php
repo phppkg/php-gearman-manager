@@ -37,6 +37,19 @@ abstract class Job implements JobInterface
     protected $manager;
 
     /**
+     * Job constructor.
+     */
+    public function __construct()
+    {
+        $this->init();
+    }
+
+    protected function init()
+    {
+        // some init ...
+    }
+
+    /**
      * do the job
      * @param string $workload
      * @param \GearmanJob $job
@@ -50,10 +63,14 @@ abstract class Job implements JobInterface
         $this->name = $job->functionName();
         $this->manager = $manager;
 
-        if (false !== $this->beforeRun($workload, $job)) {
-            $result = $this->doRun($workload, $job);
+        try {
+            if (false !== $this->beforeRun($workload, $job)) {
+                $result = $this->doRun($workload, $job);
 
-            $this->afterRun();
+                $this->afterRun($result);
+            }
+        } catch (\Exception $e) {
+            $this->onException($e);
         }
 
         return $result;
@@ -82,6 +99,14 @@ abstract class Job implements JobInterface
      */
     protected function afterRun($result)
     {}
+
+    /**
+     * @param \Exception $e
+     */
+    protected function onException(\Exception $e)
+    {
+        // error
+    }
 
     /**
      * @param mixed $context

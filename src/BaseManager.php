@@ -648,6 +648,11 @@ abstract class BaseManager implements ManagerInterface
             $timeouts[$job] = (int)$this->getJobOpt($job, 'timeout', $defTimeout);
         }
 
+        if (!$isFirst) {
+            // clear file info
+            clearstatcache();
+        }
+
         // fork process
         $pid = pcntl_fork();
 
@@ -811,6 +816,8 @@ abstract class BaseManager implements ManagerInterface
             return false;
         }
 
+        $this->trigger(self::EVENT_BEFORE_PUSH, [$name, $handler, $opts]);
+
         // get handler type
         if (is_string($handler)) {
             if (function_exists($handler)) {
@@ -862,6 +869,8 @@ abstract class BaseManager implements ManagerInterface
 
         $this->setJobOpts($name, $opts);
         $this->handlers[$name] = $handler;
+
+        $this->trigger(self::EVENT_AFTER_PUSH, [$name, $handler, $opts]);
 
         return true;
     }

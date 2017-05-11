@@ -2,12 +2,16 @@
 
 a php gearman workers manager.
 
-Learning reference the project [brianlmoon/GearmanManager](https://github.com/brianlmoon/GearmanManager), Thank you very much for this project.
+Can start and manage multiple gearman worker, you can set the maximum execution time of 
+each worker and the maximum number of job execution, after reaching the set value.
+Worker will automatically restart the process, prevent the dead
+
+Learning reference the project **[brianlmoon/GearmanManager](https://github.com/brianlmoon/GearmanManager)**, Thank you very much for this project.
 
 add some feature:
 
 - Code is easier to read and understand
-- Can support `reload` `restart` `stop` command
+- Can support `reload` `restart` `stop` `status` command
 
 > only support linux system, and require enable `pcntl` `posix` 
 
@@ -82,7 +86,7 @@ php bin/manager.php stop
 php bin/manager.php restart
 ```
 
-- other
+- more
 
 ```bash
 // see help info
@@ -90,6 +94,12 @@ php bin/manager.php --help
 
 // print manager config info
 php bin/manager.php -D
+
+// jobs status
+php bin/manager.php status --cmd status
+
+// workers status
+php bin/manager.php status --cmd workers
 ```
 
 ### add handler
@@ -131,6 +141,26 @@ $mgr->addHandler('echo_job', \inhere\gearman\jobs\EchoJob::class, [
     'worker_num' => 2,
     'focus_on' => 1,
 ]);
+```
+
+- extends `inhere\gearman\Job`
+
+```php
+
+/**
+ * Class EchoJob
+ * @package inhere\gearman\jobs
+ */
+class EchoJob extends Job
+{
+    /**
+     * {@inheritDoc}
+     */
+    protected function doRun($workload, \GearmanJob $job)
+    {
+        echo "receive: $workload";
+    }
+}
 ```
 
 ### start manager

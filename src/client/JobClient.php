@@ -17,9 +17,9 @@ use inhere\gearman\traits\EventTrait;
  * @method string doNormal($function_name, $workload, $unique = null)
  * @method string doLow($function_name, $workload, $unique = null)
  *
- * @method string doHighBackground($function_name, $workload, $unique = null)
- * @method string doBackground($function_name, $workload, $unique = null)
- * @method string doLowBackground($function_name, $workload, $unique = null)
+ * @method bool doHighBackground($funcName, $workload, $retry = 3, $unique = null)
+ * @method bool doBackground($funcName, $workload, $retry = 3, $unique = null)
+ * @method bool doLowBackground($funcName, $workload, $retry = 3, $unique = null)
  *
  * @method array jobStatus($job_handle)
  */
@@ -146,7 +146,7 @@ class JobClient
      * @param string $clientMethod
      * @return mixed
      */
-    public function doJob($funcName, $workload, $unique = null, $clientMethod = 'doNormal')
+    public function doJob($funcName, $workload, $clientMethod = 'doNormal', $unique = null)
     {
         if (!$this->enable) {
             return null;
@@ -180,7 +180,7 @@ class JobClient
      * @param string $clientMethod
      * @return mixed
      */
-    public function addJob($funcName, $workload, $retry = 3, $unique = null, $clientMethod = 'doBackground')
+    public function addJob($funcName, $workload, $retry = 3, $clientMethod = 'doBackground', $unique = null)
     {
         if (!$this->enable) {
             return null;
@@ -203,27 +203,26 @@ class JobClient
         }
 
         $result = false;
-        $retry = $retry < 0 ? $this->retry : $retry;
+        $retry = $retry < 0 || $retry > 30 ? (int)$this->retry : (int)$retry;
         $this->stdout("push a job to the server.Job: $funcName Type: $clientMethod Data: $workload");
 
         try {
             while ($retry--) {
                 $jobHandle = $this->client->$clientMethod($funcName, $workload, $unique);
-                $stat = $this->client->jobStatus($jobHandle);
 
-                if (!$stat[0]) {
+                if ($this->client->returnCode() !== GEARMAN_SUCCESS) {
+                    $this->trigger(self::EVENT_ERROR_ADD, [$this->client->error(), $funcName, $workload]);
+                } else {
                     $result = true;
-                    $this->trigger(self::EVENT_BEFORE_ADD, [$funcName, $workload, $stat]);
+                    $stat = $this->client->jobStatus($jobHandle);
+                    $this->trigger(self::EVENT_AFTER_ADD, [$funcName, $workload, $stat]);
+
                     break;
                 }
             }
         } catch (\Exception $e) {
             $this->trigger(self::EVENT_ERROR_ADD, [$e->getMessage(), $funcName, $workload, null]);
             return false;
-        }
-
-        if (!$result) {
-            $this->trigger(self::EVENT_ERROR_ADD, [$this->client->error(), $funcName, $workload, $stat]);
         }
 
         return $result;// bool
@@ -277,8 +276,8 @@ class JobClient
             return $this->doJob(
                 $params[0],
                 isset($params[1]) ? $params[1] : '',
-                isset($params[2]) ? $params[2] : null,
-                $name
+                $name,
+                isset($params[2]) ? $params[2] : null
             );
         }
 
@@ -286,8 +285,9 @@ class JobClient
             return $this->addJob(
                 $params[0],
                 isset($params[1]) ? $params[1] : '',
-                isset($params[2]) ? $params[2] : null,
-                $name
+                isset($params[2]) ? (int)$params[2] : 3,
+                $name,
+                isset($params[3]) ? $params[3] : null
             );
         }
 

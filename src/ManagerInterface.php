@@ -23,15 +23,14 @@ interface ManagerInterface
     const EVENT_AFTER_PUSH = 'afterPush';
 
     const EVENT_MASTER_START = 'masterStart';
-    const EVENT_MASTER_Stop = 'masterStop';
+    const EVENT_MASTER_STOP = 'masterStop';
 
     const EVENT_WORKER_START = 'workerStart';
-    const EVENT_WORKER_Stop = 'workerStop';
+    const EVENT_WORKER_STOP = 'workerStop';
 
     const EVENT_BEFORE_WORK = 'beforeWork';
     const EVENT_AFTER_WORK = 'afterWork';
-
-    const EVENT_AFTER_ERROR = 'afterError';
+    const EVENT_ERROR_WORK = 'errorWork';
 
     /**
      * handler types

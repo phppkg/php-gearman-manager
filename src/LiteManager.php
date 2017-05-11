@@ -138,7 +138,7 @@ class LiteManager extends BaseManager
             return false;
         }
 
-        $e = $ret = null;
+        $ret = null;
 
         $this->log("doJob: ($h) Starting job: $name", self::LOG_WORKER_INFO);
         $this->log("doJob: ($h) Job $name workload: $wl", self::LOG_DEBUG);
@@ -155,17 +155,15 @@ class LiteManager extends BaseManager
                 $this->log("doJob: ($h) Calling function handler($jobFunc) do the job: $name.", self::LOG_WORKER_INFO);
                 $ret = $handler($job->workload(), $job, $this);
             }
+
+            $this->log("doJob: ($h) Completed the job: $name, return: $ret", self::LOG_WORKER_INFO);
+            $this->trigger(self::EVENT_AFTER_WORK, [$job, $ret]);
         } catch (\Exception $e) {
             $this->log("doJob: ($h) Failed to do the job: $name. Error: " . $e->getMessage(), self::LOG_ERROR);
-            $this->trigger(self::EVENT_AFTER_ERROR, [$job, $e]);
+            $this->trigger(self::EVENT_ERROR_WORK, [$job, $e]);
         }
 
         $this->jobExecCount++;
-
-        if (!$e) {
-            $this->log("doJob: ($h) Completed Job: $name", self::LOG_WORKER_INFO);
-            $this->trigger(self::EVENT_AFTER_WORK, [$job, $ret]);
-        }
 
         return $ret;
     }

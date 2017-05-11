@@ -4,7 +4,7 @@ php 的 gearman workers 管理工具。
 
 可同时启动并管理多个gearman worker,可以设置每个worker的最大执行时间和最大job执行数量，到达设定值后。会自动重启worker，防止进程僵死
 
-Learning reference the project [brianlmoon/GearmanManager](https://github.com/brianlmoon/GearmanManager), Thank you very much for this project.
+学习并参考自项目 **[brianlmoon/GearmanManager](https://github.com/brianlmoon/GearmanManager)**, 非常感谢这个项目.
 
 add some feature:
 

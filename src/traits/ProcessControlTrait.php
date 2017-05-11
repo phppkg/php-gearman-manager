@@ -59,8 +59,6 @@ trait ProcessControlTrait
             $this->showHelp("Unable to change user to {$user} (UID: {$uid}).", -300);
         }
 
-
-
         $this->log("User set to {$user}", self::LOG_PROC_INFO);
     }
 
@@ -75,18 +73,44 @@ trait ProcessControlTrait
      */
     protected function stopMaster($pid, $quit = true)
     {
-        $this->stdout("The manager process(PID:$pid) stopping ...");
+        $this->stdout("Stop the manager(PID:$pid)");
 
         // do stop
         // 向主进程发送此信号(SIGTERM)服务器将安全终止；也可在PHP代码中调用`$server->shutdown()` 完成此操作
-        if (!$this->killProcess($pid, SIGTERM, 3)) {
-            $this->stdout("Stop the manager process(PID:$pid) failed!", self::LOG_ERROR);
+        if (!$this->killProcess($pid, SIGTERM)) {
+            $this->stdout("Stop the manager process(PID:$pid) failed!");
+        }
+
+        $startTime = time();
+        $timeout = 30;
+        $this->stdout("Stopping .", false);
+
+        // wait exit
+        while (true) {
+            if (!$this->isRunning($pid)) {
+                break;
+            }
+
+            if (time() - $startTime > $timeout) {
+                $this->stdout("Stop the manager process(PID:$pid) failed(timeout)!", true, -2);
+                break;
+            }
+
+            $this->stdout('.', false);
+            sleep(1);
         }
 
         // stop success
-        $this->stdout("The manager process(PID:$pid) stopped.");
+        $this->stdout("\nThe manager stopped.\n");
 
-        $quit && $this->quit();
+        if ($quit) {
+            $this->quit();
+        }
+
+        // clear file info
+        clearstatcache();
+
+        $this->stdout("Begin restart manager ...");
     }
 
     /**
