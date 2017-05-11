@@ -212,6 +212,9 @@ abstract class BaseManager implements ManagerInterface
         // the master process pid save file
         'pid_file' => 'gwm.pid',
 
+        // will record manager meta data to file
+        'meta_file' => 'meta.dat',
+
         // job handle default timeout seconds
         'timeout' => 300,
 
@@ -281,7 +284,7 @@ abstract class BaseManager implements ManagerInterface
     protected function handleCommandAndConfig()
     {
         $result = Helper::parseParameters([
-            'd', 'daemon', 'w', 'watch', 'h', 'help', 'V', 'version', 'no-test'
+            'd', 'daemon', 'w', 'watch', 'h', 'help', 'V', 'version', 'no-test', 'watch-status'
         ]);
         $this->fullScript = implode(' ', $GLOBALS['argv']);
         $this->script = $result[0];
@@ -336,8 +339,8 @@ abstract class BaseManager implements ManagerInterface
                 $this->reloadWorkers($masterPid);
                 break;
             case 'status':
-                // $this->showStatus();
-                $this->showHelp("The command [{$command}] is un-completed!");
+                $cmd = isset($result['cmd']) ? $result['cmd']: 'status';
+                $this->showStatus($cmd, isset($result['watch-status']));
                 break;
             default:
                 $this->showHelp("The command [{$command}] is don't supported!");
@@ -888,9 +891,47 @@ abstract class BaseManager implements ManagerInterface
         }
     }
 
-    protected function showStatus()
+    /**
+     * show Status
+     * @param string $cmd
+     * @param bool $doWatch
+     */
+    protected function showStatus($cmd = 'status', $doWatch = false)
     {
-        // todo ...
+        // todo 暂时只支持一个
+        $server = $this->getServers()[0];
+
+        if (strpos($server, ':')) {
+            list($host, $port) = explode(':', $server);
+        } else {
+            $host = $server;
+            $port = 4730;
+        }
+
+        $this->stdout("Connect to the gearman server {$host}:{$port}");
+
+        $telnet = new Telnet($host, $port);
+
+        if ($doWatch) {
+            $telnet->watch($cmd);
+            $this->quit();
+        }
+
+        switch ($cmd) {
+            case 'workers':
+                $this->stdout("There are workers info:\n");
+                $result = $telnet->command($cmd);
+                break;
+
+            case 'status':
+            default:
+            $this->stdout("There are jobs status info:\n");
+                $result = $telnet->command('status');
+
+                break;
+        }
+
+        $this->stdout($result, true, 0);
     }
 
     /**
@@ -948,6 +989,7 @@ OPTIONS:
   -v [LEVEL]         Increase verbosity level by one. eg: -v vv | -v vvv
 
     --no-test        Not add test handler(prefix:test)
+    --watch-status   Watch status command, will auto refresh status.
 
   -d,--daemon        Daemon, detach and run in the background
   -h,--help          Shows this help information

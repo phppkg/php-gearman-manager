@@ -320,6 +320,7 @@ OPTIONS:
   -v [LEVEL]         Increase verbosity level by one. eg: -v vv | -v vvv
 
     --no-test        Not add test handler(prefix:test)
+    --watch-status   Watch status command, will auto refresh status.
 
   -w,--watch         Automatically watch and reload when 'loader_file' has been modify
   -d,--daemon        Daemon, detach and run in the background

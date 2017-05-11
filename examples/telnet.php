@@ -31,11 +31,14 @@ EOF;
 }
 
 $host = isset($argv[1]) ? $argv[1] : '127.0.0.1';
-$port = isset($argv[2]) ? $argv[2] : 80;
+$port = isset($argv[2]) ? $argv[2] : 4730;
+
+echo "Connect to the gearman server {$host}:{$port}\n";
 
 $tt = new \inhere\gearman\tools\Telnet($host, $port);
 
 // var_dump($tt);die;
 
 //echo $tt->command('status');
-$tt->interactive();
+$tt->watch('status');
+// $tt->interactive();

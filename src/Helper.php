@@ -128,6 +128,10 @@ class Helper
         if (DIRECTORY_SEPARATOR === '\\') {
             $result = $text;
         } else {
+            if (!is_numeric($style{0})) {
+                $style = isset(self::$styles[$style]) ? self::$styles[$style] : '0';
+            }
+
 //            $result = chr(27). "$out$text" . chr(27) . chr(27) . "[0m". chr(27);
             $result = "\033[{$style}m{$text}\033[0m";
         }
