@@ -8,12 +8,17 @@
  */
 
 use \inhere\gearman\Manager;
+use inhere\gearman\tools\FileLogger;
 
 error_reporting(E_ALL | E_STRICT);
 
 require __DIR__ . '/simple-loader.php';
 
 date_default_timezone_set('Asia/Shanghai');
+
+// create job logger
+// use: FileLogger::info('message', ['data'], 'test_job');
+FileLogger::create(__DIR__ . '/logs/jobs', FileLogger::SPLIT_DAY);
 
 $config = [
     'name' => 'test',

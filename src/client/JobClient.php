@@ -117,19 +117,20 @@ class JobClient
         try {
             $client = new \GearmanClient();
 
-            if ($servers = implode(',', (array)$this->servers)) {
-                $this->stdout("connect to the servers {$servers}");
-                $client->addServers($servers);
-            } else {
-                $this->stdout("connect to the default server 127.0.0.1:4730");
-                $client->addServer();
+            if (!$servers = implode(',', (array)$this->servers)) {
+                $servers = $this->servers = '127.0.0.1:4730';
+                // $this->stdout("connect to the servers {$servers}");
             }
+
+            $client->addServers($servers);
         } catch (\Exception $e) {
-            $this->stdout("connect to the gearmand server error: {$e->getMessage()}", true, -500);
+            // $this->stdout("connect to the gearmand server error: {$e->getMessage()}", true, -500);
+            throw $e;
         }
 
         if ($er = $client->error()) {
-            $this->stdout("connect to the gearmand server error: {$er}", true, -500);
+            // $this->stdout("connect to the gearmand server error: {$er}", true, -500);
+            throw new \RuntimeException("connect to the gearmand server error: {$er}");
         }
 
         $this->enable = true;
@@ -187,7 +188,7 @@ class JobClient
         }
 
         if (in_array($clientMethod, self::$frontMethods, true)) {
-            return $ret;
+            return $this->doJob($funcName, $workload, $clientMethod, $unique);
         }
 
         $this->trigger(self::EVENT_BEFORE_ADD, [$funcName, $workload, $clientMethod]);
@@ -204,10 +205,9 @@ class JobClient
 
         $result = false;
         $retry = $retry < 0 || $retry > 30 ? (int)$this->retry : (int)$retry;
-        $this->stdout("push a job to the server.Job: $funcName Type: $clientMethod Data: $workload");
 
         try {
-            while ($retry--) {
+            while ($retry >= 0) {
                 $jobHandle = $this->client->$clientMethod($funcName, $workload, $unique);
 
                 if ($this->client->returnCode() !== GEARMAN_SUCCESS) {
@@ -219,45 +219,15 @@ class JobClient
 
                     break;
                 }
+
+                $retry--;
             }
         } catch (\Exception $e) {
-            $this->trigger(self::EVENT_ERROR_ADD, [$e->getMessage(), $funcName, $workload, null]);
+            $this->trigger(self::EVENT_ERROR_ADD, [$e->getMessage(), $funcName, $workload]);
             return false;
         }
 
         return $result;// bool
-    }
-
-    /**
-     * @return array|string
-     */
-    public function getServers()
-    {
-        return $this->servers;
-    }
-
-    /**
-     * @param array|string $servers
-     */
-    public function setServers($servers)
-    {
-        $this->servers = $servers;
-    }
-
-    /**
-     * @return \GearmanClient
-     */
-    public function getClient()
-    {
-        return $this->client;
-    }
-
-    /**
-     * @param \GearmanClient $client
-     */
-    public function setClient(\GearmanClient $client)
-    {
-        $this->client = $client;
     }
 
     /**
@@ -296,6 +266,38 @@ class JobClient
         }
 
         throw new \RuntimeException('Calling unknown method: ' . get_class($this) . "::$name()");
+    }
+
+    /**
+     * @return array|string
+     */
+    public function getServers()
+    {
+        return $this->servers;
+    }
+
+    /**
+     * @param array|string $servers
+     */
+    public function setServers($servers)
+    {
+        $this->servers = $servers;
+    }
+
+    /**
+     * @return \GearmanClient
+     */
+    public function getClient()
+    {
+        return $this->client;
+    }
+
+    /**
+     * @param \GearmanClient $client
+     */
+    public function setClient(\GearmanClient $client)
+    {
+        $this->client = $client;
     }
 
     /**

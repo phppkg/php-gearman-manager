@@ -168,24 +168,6 @@ class Telnet
     }
 
     /**
-     * send command
-     * @param  string $command
-     * @param bool $readResult
-     * @param int $readSize
-     * @return false|int|string
-     */
-    public function command($command, $readResult = true, $readSize = 1024)
-    {
-        $len = $this->write(trim($command) . "\r\n");
-
-        if ($readResult) {
-            return $this->read($readSize);
-        }
-
-        return $len;
-    }
-
-    /**
      * watch a command
      * @param  string  $command
      * @param  integer $interval (ms)
@@ -246,6 +228,24 @@ class Telnet
         }
 
         $this->close();
+    }
+
+    /**
+     * send command
+     * @param  string $command
+     * @param bool $readResult
+     * @param int $readSize
+     * @return false|int|string
+     */
+    public function command($command, $readResult = true, $readSize = 1024)
+    {
+        $len = $this->write(trim($command) . "\r\n");
+
+        if ($readResult) {
+            return $this->read($readSize);
+        }
+
+        return $len;
     }
 
     /**

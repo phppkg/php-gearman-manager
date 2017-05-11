@@ -16,7 +16,7 @@ $opts = getopt('h', ['help']);
 
 if (isset($opts['h']) || isset($opts['help'])) {
     $script = array_shift($argv);
-    $script = Helper::addColor($script, Helper::$styles['light_green']);
+    $script = Helper::color($script, Helper::$styles['light_green']);
     $help = <<<EOF
 Start a telnet client.
 
@@ -40,5 +40,5 @@ $tt = new \inhere\gearman\tools\Telnet($host, $port);
 // var_dump($tt);die;
 
 //echo $tt->command('status');
-$tt->watch('status');
-// $tt->interactive();
+//$tt->watch('status');
+$tt->interactive();

@@ -11,6 +11,7 @@
 namespace inhere\gearman;
 
 use inhere\gearman\jobs\JobInterface;
+use inhere\gearman\tools\Telnet;
 use inhere\gearman\traits;
 
 /**
@@ -287,7 +288,7 @@ abstract class BaseManager implements ManagerInterface
             'd', 'daemon', 'w', 'watch', 'h', 'help', 'V', 'version', 'no-test', 'watch-status'
         ]);
         $this->fullScript = implode(' ', $GLOBALS['argv']);
-        $this->script = $result[0];
+        $this->script = strpos($result[0], '.php') ? "php {$result[0]}" : $result[0];
         $this->command = $command = isset($result[1]) ? $result[1] : 'start';
         unset($result[0], $result[1]);
 
@@ -316,7 +317,7 @@ abstract class BaseManager implements ManagerInterface
         if ($command === 'start') {
             // check master process is running
             if ($isRunning) {
-                $this->stdout("ERROR: The worker manager has been running. (PID:{$masterPid})\n", true, -__LINE__);
+                $this->stderr("The worker manager has been running. (PID:{$masterPid})\n", true, -__LINE__);
             }
 
             return true;
@@ -324,7 +325,7 @@ abstract class BaseManager implements ManagerInterface
 
         // check master process
         if (!$isRunning) {
-            $this->stdout("ERROR: The worker manager is not running. can not execute the command: {$command}\n", true, -__LINE__);
+            $this->stderr("The worker manager is not running. can not execute the command: {$command}\n", true, -__LINE__);
         }
 
         // switch command
@@ -520,7 +521,7 @@ abstract class BaseManager implements ManagerInterface
 
         // check
         if (!$this->handlers) {
-            $this->stdout("ERROR: No jobs handler found. please less register one.\n");
+            $this->stderr("No jobs handler found. please less register one.\n");
             $this->quit();
         }
 
@@ -917,7 +918,7 @@ abstract class BaseManager implements ManagerInterface
             $port = 4730;
         }
 
-        $this->stdout("Connect to the gearman server {$host}:{$port}");
+        $this->stdout("Connect to the gearman server " . Helper::color("{$host}:{$port}", 'green'));
 
         $telnet = new Telnet($host, $port);
 
@@ -948,7 +949,7 @@ abstract class BaseManager implements ManagerInterface
      */
     protected function showVersion()
     {
-        printf("Gearman worker manager script tool. Version %s\n", self::VERSION);
+        printf("Gearman worker manager script tool. Version %s\n", Helper::color(self::VERSION, 'green'));
 
         $this->quit();
     }
@@ -960,7 +961,7 @@ abstract class BaseManager implements ManagerInterface
      */
     protected function showHelp($msg = '', $code = 0)
     {
-        $version = self::VERSION;
+        $version = Helper::color(self::VERSION, 'green');
         $script = $this->getScript();
 
         if ($msg) {
@@ -974,22 +975,32 @@ Gearman worker manager(gwm) script tool. Version $version(lite)
 USAGE:
   $script {COMMAND} -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-w] [-p PID_FILE]
   $script -h
+  $script -D
 
 COMMANDS:
-  start             Start gearman worker manager(default command)
+  start             Start gearman worker manager(default)
   stop              Stop running's gearman worker manager
   restart           Restart running's gearman worker manager
   reload            Reload all running workers of the manager
   status            Get gearman worker manager runtime status
 
-OPTIONS:
-  -c CONFIG          Worker configuration file
-  -s HOST[:PORT]     Connect to server HOST and optional PORT
+SPECIAL OPTIONS:
+  start/restart
+    -d,--daemon        Daemon, detach and run in the background
+       --no-test       Not add test handler, when job name prefix is 'test'.(eg: test_job)
+
+  status
+    --cmd COMMAND      Send command when connect to the job server. allow:status,workers.(default:status)
+    --watch-status     Watch status command, will auto refresh status.
+
+PUBLIC OPTIONS:
+  -c CONFIG          Load a custom worker manager configuration file
+  -s HOST[:PORT]     Connect to server HOST and optional PORT, multi server separated by commas(',')
 
   -n NUMBER          Start NUMBER workers that do all jobs
 
   -l LOG_FILE        Log output to LOG_FILE or use keyword 'syslog' for syslog support
-  -p PID_FILE        File to write process ID out to
+  -p PID_FILE        File to write master process ID out to
 
   -r NUMBER          Maximum run job iterations per worker
   -x SECONDS         Maximum seconds for a worker to live
@@ -997,10 +1008,6 @@ OPTIONS:
 
   -v [LEVEL]         Increase verbosity level by one. eg: -v vv | -v vvv
 
-    --no-test        Not add test handler(prefix:test)
-    --watch-status   Watch status command, will auto refresh status.
-
-  -d,--daemon        Daemon, detach and run in the background
   -h,--help          Shows this help information
   -V,--version       Display the version of the manager
   -D,--dump [all]    Parse the command line and config file then dump it to the screen and exit.\n\n

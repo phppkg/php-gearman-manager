@@ -22,6 +22,7 @@ abstract class Job implements JobInterface
     protected $context;
 
     /**
+     * the job id
      * @var string
      */
     protected $id;

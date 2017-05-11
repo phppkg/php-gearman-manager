@@ -7,6 +7,7 @@
  */
 
 namespace inhere\gearman\traits;
+use inhere\gearman\Helper;
 
 /**
  * Trait LogTrait
@@ -190,6 +191,22 @@ trait LogTrait
     }
 
     /**
+     * Logs data to stderr
+     * @param string $text
+     * @param bool $nl
+     * @param bool|int $quit
+     */
+    protected function stderr($text, $nl = true, $quit = false)
+    {
+        fwrite(\STDERR, Helper::color('ERROR: ', 'red') . $text . ($nl ? PHP_EOL : ''));
+
+        if (($isTrue = true === $quit) || is_int($quit)) {
+            $code = $isTrue ? 0 : $quit;
+            exit($code);
+        }
+    }
+
+    /**
      * Logs data to the syslog
      * @param string $msg
      * @param int $level
@@ -219,7 +236,7 @@ trait LogTrait
         }
 
         if (!$ret = syslog($priority, $msg)) {
-            $this->stdout("ERROR: Unable to write to syslog\n");
+            $this->stderr("Unable to write to syslog\n");
         }
 
         return $ret;

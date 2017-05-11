@@ -120,10 +120,9 @@ class Helper
     /**
      * @param $text
      * @param string $style
-     * @param bool $return
      * @return bool|string
      */
-    public static function addColor($text, $style = '0', $return = true)
+    public static function color($text, $style = '0')
     {
         if (DIRECTORY_SEPARATOR === '\\') {
             $result = $text;
@@ -136,12 +135,6 @@ class Helper
             $result = "\033[{$style}m{$text}\033[0m";
         }
 
-        if($return){
-            return $result;
-        }
-
-        echo $result;
-
-        return true;
+        return $result;
     }
 }
