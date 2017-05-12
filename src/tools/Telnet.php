@@ -185,7 +185,7 @@ class Telnet
             $count++;
             $result = $this->command($command);
 
-            if (0 === strpos($result, 'ERR ')) {
+            if (0 === strpos($result, 'ERR')) {
                 echo "$result\n";
                 echo "error command: $command.";
                 break;

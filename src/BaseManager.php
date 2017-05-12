@@ -65,11 +65,6 @@ abstract class BaseManager implements ManagerInterface
      */
     protected $verbose = 4;
 
-    /**
-     * @var bool
-     */
-    protected $daemon = false;
-
     ///////// process control //////////
 
     /**

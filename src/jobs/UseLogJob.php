@@ -7,6 +7,7 @@
  */
 
 namespace inhere\gearman\jobs;
+
 use inhere\gearman\tools\FileLogger;
 
 /**
