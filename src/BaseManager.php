@@ -28,7 +28,7 @@ abstract class BaseManager implements ManagerInterface
      * Logging levels
      * @var array $levels Logging levels
      */
-    protected static $levels = array(
+    protected static $levels = [
         self::LOG_EMERG => 'EMERGENCY',
         self::LOG_ERROR => 'ERROR',
         self::LOG_WARN => 'WARNING',
@@ -37,7 +37,7 @@ abstract class BaseManager implements ManagerInterface
         self::LOG_WORKER_INFO => 'WORKER_INFO',
         self::LOG_DEBUG => 'DEBUG',
         self::LOG_CRAZY => 'CRAZY',
-    );
+    ];
 
     /**
      * @var string
@@ -154,7 +154,7 @@ abstract class BaseManager implements ManagerInterface
 
     /**
      * The array of meta for manager/worker
-     * @var string[]
+     * @var array
      */
     protected $meta = [
         'start_time' => 0,
@@ -474,8 +474,8 @@ abstract class BaseManager implements ManagerInterface
             $this->config['max_lifetime'] = self::MAX_LIFETIME;
         }
 
-        if ($this->config['max_run_jobs'] < self::MAX_RUN_JOBS) {
-            $this->config['max_run_jobs'] = self::MAX_LIFETIME;
+        if ($this->config['max_run_jobs'] < self::MIN_RUN_JOBS) {
+            $this->config['max_run_jobs'] = self::MAX_RUN_JOBS;
         }
 
         if ($this->config['restart_splay'] <= 100) {
@@ -498,6 +498,7 @@ abstract class BaseManager implements ManagerInterface
         $this->verbose = $this->config['log_level'];
         $this->pidFile = $this->config['pid_file'];
 
+        unset($config);
     }
 
 //////////////////////////////////////////////////////////////////////

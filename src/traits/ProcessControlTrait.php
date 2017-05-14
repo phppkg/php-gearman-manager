@@ -214,19 +214,22 @@ trait ProcessControlTrait
      */
     protected function registerSignals($isMaster = true)
     {
+        // ignore
+        pcntl_signal(SIGPIPE, SIG_IGN, false);
+
         if ($isMaster) {
             // $signals = ['SIGTERM' => 'close worker', ];
             $this->log('Registering signal handlers for master(parent) process', self::LOG_DEBUG);
 
-            pcntl_signal(SIGTERM, array($this, 'signalHandler'));
-            pcntl_signal(SIGINT, array($this, 'signalHandler'));
-            pcntl_signal(SIGUSR1, array($this, 'signalHandler'));
-            pcntl_signal(SIGUSR2, array($this, 'signalHandler'));
-            pcntl_signal(SIGHUP, array($this, 'signalHandler'));
+            pcntl_signal(SIGTERM, [$this, 'signalHandler'], false);
+            pcntl_signal(SIGINT, [$this, 'signalHandler'], false);
+            pcntl_signal(SIGUSR1, [$this, 'signalHandler'], false);
+            pcntl_signal(SIGUSR2, [$this, 'signalHandler'], false);
+            pcntl_signal(SIGHUP, [$this, 'signalHandler'], false);
         } else {
             $this->log("Registering signal handlers for current worker process", self::LOG_DEBUG);
 
-            if (!pcntl_signal(SIGTERM, array($this, 'signalHandler'))) {
+            if (!pcntl_signal(SIGTERM, [$this, 'signalHandler'], false)) {
                 $this->quit(-170);
             }
         }
@@ -238,9 +241,9 @@ trait ProcessControlTrait
      */
     public function signalHandler($sigNo)
     {
-        static $stopCount = 0;
-
         if ($this->isMaster) {
+            static $stopCount = 0;
+
             switch ($sigNo) {
                 case SIGINT: // Ctrl + C
                 case SIGTERM:
