@@ -46,6 +46,9 @@ class Manager extends LiteManager
         }
     }
 
+    /**
+     * beforeStartWorkers
+     */
     protected function beforeStartWorkers()
     {
         // fork a Helper process
@@ -53,6 +56,9 @@ class Manager extends LiteManager
         $this->startHelper();
     }
 
+    /**
+     * afterStart
+     */
     protected function afterStart()
     {
         // stop Helper
@@ -335,40 +341,6 @@ PUBLIC OPTIONS:
   -D,--dump [all]    Parse the command line and config file then dump it to the screen and exit.\n\n
 EOF;
         exit($code);
-    }
-
-    /**
-     * Handles anything we need to do when we are shutting down
-     */
-    public function __destruct()
-    {
-        // master
-        if ($this->isMaster) {
-            // stop Helper
-            $this->stopHelper();
-
-            // delPidFile
-            $this->delPidFile();
-
-            // close logFileHandle
-            if ($this->logFileHandle) {
-                fclose($this->logFileHandle);
-
-                $this->logFileHandle = null;
-            }
-
-            $this->log('All workers stopped', self::LOG_PROC_INFO);
-            $this->log("Manager stopped\n", self::LOG_PROC_INFO);
-
-            // helper
-        } elseif ($this->isHelper) {
-            $this->log("Helper stopped", self::LOG_PROC_INFO);
-            // worker
-        } elseif ($this->isWorker) {
-            // $this->log("Worker stopped(PID:{$this->pid})", self::LOG_PROC_INFO);
-        }
-
-        $this->clear($this->isMaster);
     }
 
     /**

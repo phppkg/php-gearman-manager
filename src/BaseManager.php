@@ -525,7 +525,7 @@ abstract class BaseManager implements ManagerInterface
         // 这会导致启动后，在执行任意命令时都会删除 pid 文件(触发了__destruct)
         $this->isMaster = true;
         $this->meta['start_time'] = time();
-        $this->setProcessTitle(sprintf("php-gwm: master process%s (%s)", $this->getShowName(), $this->fullScript));
+        $this->setProcessTitle(sprintf("php-gwm: master process%s (%s)", $this->getShowName(), getcwd() . $this->fullScript));
 
         // prepare something for start
         $this->prepare();
@@ -547,12 +547,29 @@ abstract class BaseManager implements ManagerInterface
         $this->afterStart();
     }
 
+    /**
+     * beforeStartWorkers
+     */
     protected function beforeStartWorkers()
     {}
 
+    /**
+     * afterStart
+     */
     protected function afterStart()
     {
-        $this->log('Stopping Manager ...', self::LOG_PROC_INFO);
+        // delPidFile
+        $this->delPidFile();
+
+        // close logFileHandle
+        if ($this->logFileHandle) {
+            fclose($this->logFileHandle);
+
+            $this->logFileHandle = null;
+        }
+
+        $this->log('All workers stopped', self::LOG_PROC_INFO);
+        $this->log("Manager stopped\n", self::LOG_PROC_INFO);
 
         $this->quit();
     }
@@ -1111,27 +1128,6 @@ EOF;
      */
     public function __destruct()
     {
-        // master
-        if ($this->isMaster) {
-
-            // delPidFile
-            $this->delPidFile();
-
-            // close logFileHandle
-            if ($this->logFileHandle) {
-                fclose($this->logFileHandle);
-
-                $this->logFileHandle = null;
-            }
-
-            $this->log('All workers stopped', self::LOG_PROC_INFO);
-            $this->log("Manager stopped\n", self::LOG_PROC_INFO);
-
-            // worker
-        } elseif ($this->isWorker) {
-            // $this->log("Worker stopped(PID:{$this->pid})", self::LOG_PROC_INFO);
-        }
-
         $this->clear($this->isMaster);
     }
 
