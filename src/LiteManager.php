@@ -34,7 +34,7 @@ class LiteManager extends BaseManager
         $gmWorker->addOptions(GEARMAN_WORKER_NON_BLOCKING);
         $gmWorker->setTimeout($wkrTimeout * 1000); // 5s
 
-        $this->debug("The gearman worker started");
+        $this->log("The gearman worker started", self::LOG_DEBUG);
 
         foreach ($this->getServers() as $s) {
             $this->log("Adding a job server: $s", self::LOG_DEBUG);
@@ -44,7 +44,7 @@ class LiteManager extends BaseManager
                 $gmWorker->addServers($s);
             } catch (\GearmanException $e) {
                 if ($e->getMessage() !== 'Failed to set exception option') {
-                    $this->stopWork = true;
+                    $this->stopWork();
                     throw $e;
                 }
             }
@@ -108,13 +108,13 @@ class LiteManager extends BaseManager
 
             // Check the worker running time of the current child. If it has been too long, stop working.
             if ($this->maxLifetime > 0 && ($runtime > $this->maxLifetime)) {
+                $this->stopWork();
                 $this->log("Worker have been running too long time({$runtime}s), exiting", self::LOG_WORKER_INFO);
-                $this->stopWork = true;
             }
 
             if ($this->jobExecCount >= $maxRun) {
+                $this->stopWork();
                 $this->log("Ran $this->jobExecCount jobs which is over the maximum($maxRun), exiting and restart", self::LOG_WORKER_INFO);
-                $this->stopWork = true;
             }
         }
 

@@ -126,7 +126,7 @@ trait WorkerTrait
 
             case -1: // fork failed.
                 $this->log('Could not fork workers process! exiting');
-                $this->stopWork = true;
+                $this->stopWork();
                 $this->stopWorkers();
                 break;
 
@@ -181,10 +181,12 @@ trait WorkerTrait
                 }
             }
 
-            if ($this->stopWork && time() - $this->meta['stop_time'] > 30) {
-                $this->log('Workers have not exited, force killing.', self::LOG_PROC_INFO);
-                $this->stopWorkers(SIGKILL);
-                // $this->killProcess($pid, SIGKILL);
+            if ($this->stopWork) {
+                if (time() - $this->meta['stop_time'] > 30) {
+                    $this->log('Workers have not exited, force killing.', self::LOG_PROC_INFO);
+                    $this->stopWorkers(SIGKILL);
+                    // $this->killProcess($pid, SIGKILL);
+                }
             } else {
                 // If any workers have been running 150% of max run time, forcibly terminate them
                 foreach ($this->workers as $pid => $worker) {
@@ -238,7 +240,7 @@ trait WorkerTrait
             SIGKILL => 'SIGKILL',
         ];
 
-        $this->log("Stopping workers(signal:{$signals[$signal]}) ...", self::LOG_PROC_INFO);
+        $this->log("Stopping workers({$signals[$signal]}) ...", self::LOG_PROC_INFO);
 
         foreach ($this->workers as $pid => $worker) {
             $this->log("Stopping worker (PID:$pid) (Jobs:".implode(",", $worker['jobs']).")", self::LOG_PROC_INFO);

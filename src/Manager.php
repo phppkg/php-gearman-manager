@@ -92,7 +92,7 @@ class Manager extends LiteManager
                 break;
             case -1:
                 $this->log('Failed to fork helper process', self::LOG_ERROR);
-                $this->stopWork = true;
+                $this->stopWork();
                 break;
             default: // at parent
                 $this->log("Helper process forked with PID:$pid", self::LOG_PROC_INFO);
@@ -173,14 +173,14 @@ class Manager extends LiteManager
                 $gmWorker->addServers($s);
             } catch (\GearmanException $e) {
                 if ($e->getMessage() !== 'Failed to set exception option') {
-                    $this->stopWork = true;
+                    $this->stopWork();
                     throw $e;
                 }
             }
 
             if (!$gmWorker->echo('test_server') && $gmWorker->returnCode() === GEARMAN_COULD_NOT_CONNECT) {
                 $this->log("Failed connect to the server: $s", self::LOG_ERROR);
-                $this->stopWork = true;
+                $this->stopWork();
                 $this->quit(self::CODE_CONNECT_ERROR);
             }
         }
@@ -233,49 +233,11 @@ class Manager extends LiteManager
      */
     public function signalHandler($sigNo)
     {
-        static $stopCount = 0;
-
-        if ($this->isMaster) {
-            switch ($sigNo) {
-                case SIGCONT:
-                    $this->log('Validation through, continue(signal:SIGCONT)...', self::LOG_PROC_INFO);
-                    $this->waitForSignal = false;
-                    break;
-                case SIGINT: // Ctrl + C
-                case SIGTERM:
-                    $sigText = $sigNo === SIGINT ? 'SIGINT' : 'SIGTERM';
-                    $this->log("Shutting down(signal:$sigText)...", self::LOG_PROC_INFO);
-                    $this->stopWork = true;
-                    $this->meta['stop_time'] = time();
-                    $stopCount++;
-
-                    if ($stopCount < 5) {
-                        $this->stopWorkers();
-                    } else {
-                        $this->log('Stop workers failed by(signal:SIGTERM), force kill workers by(signal:SIGKILL)', self::LOG_PROC_INFO);
-                        $this->stopWorkers(SIGKILL);
-                    }
-                    break;
-                case SIGHUP:
-                    $this->log('Restarting workers(signal:SIGHUP)', self::LOG_PROC_INFO);
-                    $this->openLogFile();
-                    $this->stopWorkers();
-                    break;
-                case SIGUSR1: // reload workers and reload handlers
-                    $this->log('Reloading workers and handlers(signal:SIGUSR1)', self::LOG_PROC_INFO);
-                    $this->stopWork = true;
-                    $this->start();
-                    break;
-                case SIGUSR2:
-                    break;
-                default:
-                    // handle all other signals
-            }
-
+        if ($this->isMaster && $sigNo === SIGCONT) {
+            $this->log('Validation through, continue(SIGCONT)...', self::LOG_PROC_INFO);
+            $this->waitForSignal = false;
         } else {
-            $this->stopWork = true;
-            $this->meta['stop_time'] = time();
-            $this->log("Received 'stopWork' signal(signal:SIGTERM), will be exiting.", self::LOG_PROC_INFO);
+            parent::registerSignals($sigNo);
         }
     }
 

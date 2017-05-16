@@ -532,9 +532,8 @@ abstract class BaseManager implements ManagerInterface
             $this->quit();
         }
 
-        // 不能直接将属性 isMaster 定义为 True
-        // 这会导致启动后，在执行任意命令时都会删除 pid 文件(触发了__destruct)
         $this->isMaster = true;
+        $this->stopWork = false;
         $this->meta['start_time'] = time();
         $this->setProcessTitle(sprintf("php-gwm: master process%s (%s)", $this->getShowName(), getcwd() . $this->fullScript));
 
@@ -909,6 +908,16 @@ EOF;
     }
 
     /**
+     * mark stopWork
+     */
+    protected function stopWork()
+    {
+        //if ()
+        $this->stopWork = true;
+        $this->meta['stop_time'] = time();
+    }
+
+    /**
      * exit
      * @param int $code
      */
@@ -936,7 +945,7 @@ EOF;
                 break;
             case self::CODE_CONNECT_ERROR:
                 $message = "Worker (PID:$pid) connect to job server failed. exiting";
-                $this->stopWork = true;
+                $this->stopWork();
                 break;
             default:
                 $message = "Worker (PID:$pid) died unexpectedly with exit code $statusCode. (Jobs:$jobStr)";
