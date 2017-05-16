@@ -156,7 +156,7 @@ class LiteManager extends BaseManager
                 $ret = $handler($job->workload(), $job, $this);
             }
 
-            $this->log("doJob: ($h) Completed the job: $name, return: $ret", self::LOG_WORKER_INFO);
+            $this->log("doJob: ($h) Completed the job: $name", self::LOG_WORKER_INFO);
             $this->trigger(self::EVENT_AFTER_WORK, [$job, $ret]);
         } catch (\Exception $e) {
             $this->log("doJob: ($h) Failed to do the job: $name. Error: " . $e->getMessage(), self::LOG_ERROR);

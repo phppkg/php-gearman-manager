@@ -43,7 +43,7 @@ abstract class RequestProxyJob extends UseLogJob
      * @param array $payload
      * @return bool
      */
-    abstract protected function dataValidate(array $payload);
+    abstract protected function dataValidate(array &$payload);
     // {
     //      if (!isset($payload['userId']) || $payload['userId'] <= 0) {
     //          return false;
@@ -79,12 +79,16 @@ abstract class RequestProxyJob extends UseLogJob
         $ary = json_decode($ret, true);
 
         if ($ary && (int)$ary['status'] === 0) {
-            $this->info("successful for the job, remote return=$ret");
+            $this->info("Successful for the job, remote return=$ret");
 
             return true;
         }
 
-        $this->err("failed for the job, remote return=$ret");
+        $this->err("Failed for the job, remote return=$ret workload=$workload send=", [
+            'method' => $method,
+            'api' => $baseUrl . $path,
+            'data' => $payload,
+        ]);
 
         return false;
     }

@@ -12,58 +12,11 @@ add some feature:
 
 - Code is easier to read and understand
 - Can support `reload` `restart` `stop` `status` command
+- More useful feature
 
 > only support linux system, and require enable `pcntl` `posix` 
 
-### config 
-
-there are some config 
-
-```php 
-    // run in the background
-    'daemon' => false,
-
-    // need 4 worker do all jobs
-    'worker_num' => 4,
-
-    // Workers will only live for 1 hour, after will auto restart.
-    'max_lifetime' => 3600,
-    // now, max_lifetime is >= 3600 and <= 4200
-    'restart_splay' => 600,
-    // max run 2000 job of each worker, after will auto restart.
-    'max_run_jobs' => 2000,
-```
-
-## usage 
-
-### entry script
-
-- file: `gwm.php`
-
-```php
-use \inhere\gearman\Manager;
-
-$config = [
-    'daemon' => false,
-    'pid_file' => __DIR__ . '/manager.pid',
-
-    'log_level' => Manager::LOG_DEBUG,
-    'log_file' => __DIR__ . '/workers.log',
-
-    'loader_file' => __DIR__ . '/job_handlers.php',
-];
-
-$mgr = new Manager($config);
-
-$mgr->setHandlersLoader(function (Manager $mgr)
-{
-    require __DIR__ . '/job_handlers.php';
-});
-
-$mgr->start();
-```
-
-### tool commands
+### basic commands
 
 - start
 
@@ -96,10 +49,65 @@ php bin/manager.php --help
 php bin/manager.php -D
 
 // jobs status
+php bin/manager.php status
 php bin/manager.php status --cmd status
 
 // workers status
 php bin/manager.php status --cmd workers
+```
+
+## commands and options
+
+use `php examples/gwm.php -h`, you can see all commands and options.
+
+```
+root@php5-dev:/var/www/phplang/library/gearman-manager# php examples/gwm.php -h
+Gearman worker manager(gwm) script tool. Version 0.1.0
+
+USAGE:
+  php examples/gwm.php {COMMAND} -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-w] [-p PID_FILE]
+  php examples/gwm.php -h
+  php examples/gwm.php -D
+
+COMMANDS:
+  start             Start gearman worker manager(default)
+  stop              Stop running's gearman worker manager
+  restart           Restart running's gearman worker manager
+  reload            Reload all running workers of the manager
+  status            Get gearman worker manager runtime status
+
+SPECIAL OPTIONS:
+  start/restart
+    -w,--watch         Automatically watch and reload when 'loader_file' has been modify
+    -d,--daemon        Daemon, detach and run in the background
+       --jobs          Only register the assigned jobs, multi job name separated by commas(',')
+       --no-test       Not add test handler, when job name prefix is 'test'.(eg: test_job)
+
+  status
+    --cmd COMMAND      Send command when connect to the job server. allow:status,workers.(default:status)
+    --watch-status     Watch status command, will auto refresh status.
+
+PUBLIC OPTIONS:
+  -c CONFIG          Load a custom worker manager configuration file
+  -s HOST[:PORT]     Connect to server HOST and optional PORT, multi server separated by commas(',')
+
+  -n NUMBER          Start NUMBER workers that do all jobs
+
+  -u USERNAME        Run workers as USERNAME
+  -g GROUP_NAME      Run workers as user's GROUP NAME
+
+  -l LOG_FILE        Log output to LOG_FILE or use keyword 'syslog' for syslog support
+  -p PID_FILE        File to write master process ID out to
+
+  -r NUMBER          Maximum run job iterations per worker
+  -x SECONDS         Maximum seconds for a worker to live
+  -t SECONDS         Number of seconds gearmand server should wait for a worker to complete work before timing out
+
+  -v [LEVEL]         Increase verbosity level by one. (eg: -v vv | -v vvv)
+
+  -h,--help          Shows this help information
+  -V,--version       Display the version of the manager
+  -D,--dump [all]    Parse the command line and config file then dump it to the screen and exit.
 ```
 
 ### add handler

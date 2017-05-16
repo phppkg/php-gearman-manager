@@ -12,7 +12,7 @@ use app\components\RequestProxyJob;
 
 /**
  * Class ApiRequestProxyJob
- * @package app\jobs
+ * @package inhere\gearman\examples\jobs
  */
 class ApiRequestProxyJob extends RequestProxyJob
 {

@@ -285,6 +285,10 @@ class Manager extends LiteManager
      */
     protected function showHelp($msg = '', $code = 0)
     {
+        $usage = Helper::color('USAGE:', 'brown');
+        $commands = Helper::color('COMMANDS:', 'brown');
+        $sOptions = Helper::color('SPECIAL OPTIONS:', 'brown');
+        $pOptions = Helper::color('PUBLIC OPTIONS:', 'brown');
         $version = Helper::color(self::VERSION, 'green');
         $script = $this->getScript();
 
@@ -296,34 +300,35 @@ class Manager extends LiteManager
         echo <<<EOF
 Gearman worker manager(gwm) script tool. Version $version
 
-USAGE:
+$usage
   $script {COMMAND} -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-w] [-p PID_FILE]
   $script -h
   $script -D
 
-COMMANDS:
+$commands
   start             Start gearman worker manager(default)
   stop              Stop running's gearman worker manager
   restart           Restart running's gearman worker manager
   reload            Reload all running workers of the manager
   status            Get gearman worker manager runtime status
 
-SPECIAL OPTIONS:
+$sOptions
   start/restart
     -w,--watch         Automatically watch and reload when 'loader_file' has been modify
     -d,--daemon        Daemon, detach and run in the background
+       --jobs          Only register the assigned jobs, multi job name separated by commas(',')
        --no-test       Not add test handler, when job name prefix is 'test'.(eg: test_job)
 
   status
     --cmd COMMAND      Send command when connect to the job server. allow:status,workers.(default:status)
     --watch-status     Watch status command, will auto refresh status.
 
-PUBLIC OPTIONS:
+$pOptions
   -c CONFIG          Load a custom worker manager configuration file
   -s HOST[:PORT]     Connect to server HOST and optional PORT, multi server separated by commas(',')
 
   -n NUMBER          Start NUMBER workers that do all jobs
-  
+
   -u USERNAME        Run workers as USERNAME
   -g GROUP_NAME      Run workers as user's GROUP NAME
 

@@ -113,6 +113,20 @@ class CurlHelper
     }
 
     /**
+     * DELETE
+     * @param string $url 地址
+     * @param array|string $data 数据
+     * @param array $headers
+     * @return mixed
+     */
+    public function delete($url, $data = null, array $headers = [])
+    {
+        return $this->exec(
+            $this->createCurl($url, 'DELETE', $data, $headers)
+        );
+    }
+
+    /**
      * @param $url
      * @param $method
      * @param mixed $data

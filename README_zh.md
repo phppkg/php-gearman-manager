@@ -9,11 +9,11 @@ php 的 gearman workers 管理工具。
 add some feature:
 
 - Code is easier to read and understand
-- Can support `reload` `restart` `stop` command
+- Can support `reload` `restart` `stop` `status` command
 
 > 只支持 linux 环境， 需要php的 `pcntl` `posix` 扩展
 
-## 工具命令
+## 基本命令
 
 ### 启动
 
@@ -45,6 +45,61 @@ php bin/manager.php --help
 // 打印manager配置信息
 php bin/manager.php -D
 ```
+
+## 命令以及选项说明
+
+在命令行里使用 `php examples/gwm.php -h` 可以查看到所有的命令和选项信息
+
+```
+root@php5-dev:/var/www/phplang/library/gearman-manager# php examples/gwm.php -h
+Gearman worker manager(gwm) script tool. Version 0.1.0
+
+USAGE:
+  php examples/gwm.php {COMMAND} -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-w] [-p PID_FILE]
+  php examples/gwm.php -h
+  php examples/gwm.php -D
+
+COMMANDS:
+  start             Start gearman worker manager(default)
+  stop              Stop running's gearman worker manager
+  restart           Restart running's gearman worker manager
+  reload            Reload all running workers of the manager
+  status            Get gearman worker manager runtime status
+
+SPECIAL OPTIONS:
+  start/restart
+    -w,--watch         Automatically watch and reload when 'loader_file' has been modify
+    -d,--daemon        Daemon, detach and run in the background
+       --jobs          Only register the assigned jobs, multi job name separated by commas(',')
+       --no-test       Not add test handler, when job name prefix is 'test'.(eg: test_job)
+
+  status
+    --cmd COMMAND      Send command when connect to the job server. allow:status,workers.(default:status)
+    --watch-status     Watch status command, will auto refresh status.
+
+PUBLIC OPTIONS:
+  -c CONFIG          Load a custom worker manager configuration file
+  -s HOST[:PORT]     Connect to server HOST and optional PORT, multi server separated by commas(',')
+
+  -n NUMBER          Start NUMBER workers that do all jobs
+
+  -u USERNAME        Run workers as USERNAME
+  -g GROUP_NAME      Run workers as user's GROUP NAME
+
+  -l LOG_FILE        Log output to LOG_FILE or use keyword 'syslog' for syslog support
+  -p PID_FILE        File to write master process ID out to
+
+  -r NUMBER          Maximum run job iterations per worker
+  -x SECONDS         Maximum seconds for a worker to live
+  -t SECONDS         Number of seconds gearmand server should wait for a worker to complete work before timing out
+
+  -v [LEVEL]         Increase verbosity level by one. (eg: -v vv | -v vvv)
+
+  -h,--help          Shows this help information
+  -V,--version       Display the version of the manager
+  -D,--dump [all]    Parse the command line and config file then dump it to the screen and exit.
+```
+
 
 ## 添加job handler(工作处理器)
 
