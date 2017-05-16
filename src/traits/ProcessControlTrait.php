@@ -114,60 +114,6 @@ trait ProcessControlTrait
     }
 
     /**
-     * reloadWorkers
-     * @param $masterPid
-     */
-    protected function reloadWorkers($masterPid)
-    {
-        $this->stdout("Workers reloading ...");
-
-        $this->sendSignal($masterPid, SIGHUP);
-
-        $this->quit();
-    }
-
-    /**
-     * Stops all running workers
-     * @param int $signal
-     * @return bool
-     */
-    protected function stopWorkers($signal = SIGTERM)
-    {
-        if (!$this->workers) {
-            $this->log('No child process(worker) need to stop', self::LOG_PROC_INFO);
-            return false;
-        }
-
-        static $stopping = false;
-
-        if ($stopping) {
-            $this->log('Workers stopping ...', self::LOG_PROC_INFO);
-            return true;
-        }
-
-        $signals = [
-            SIGINT => 'SIGINT',
-            SIGTERM => 'SIGTERM',
-            SIGKILL => 'SIGKILL',
-        ];
-
-        $this->log("Stopping workers(signal:{$signals[$signal]}) ...", self::LOG_PROC_INFO);
-
-        foreach ($this->workers as $pid => $worker) {
-            $this->log("Stopping worker (PID:$pid) (Jobs:".implode(",", $worker['jobs']).")", self::LOG_PROC_INFO);
-
-            // send exit signal.
-            $this->killProcess($pid, $signal);
-        }
-
-        if ($signal === SIGKILL) {
-            $stopping = true;
-        }
-
-        return true;
-    }
-
-    /**
      * Daemon, detach and run in the background
      */
     protected function runAsDaemon()

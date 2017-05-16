@@ -52,7 +52,6 @@ class Manager extends LiteManager
     protected function beforeStartWorkers()
     {
         // fork a Helper process
-        // $this->startHelper('startWatcher');
         $this->startHelper();
     }
 
