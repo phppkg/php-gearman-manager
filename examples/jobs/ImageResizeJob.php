@@ -6,11 +6,11 @@
  * Time: 下午9:23
  */
 
-namespace inhere\gearman\jobs;
+namespace inhere\gearman\examples\jobs;
 
 /**
  * Class ImageResizeJob
- * @package inhere\gearman\jobs
+ * @package inhere\gearman\examples\jobs
  */
 class ImageResizeJob extends Job
 {

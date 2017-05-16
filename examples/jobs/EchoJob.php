@@ -6,11 +6,11 @@
  * Time: 下午8:54
  */
 
-namespace inhere\gearman\jobs;
+namespace inhere\gearman\examples\jobs;
 
 /**
  * Class EchoJob
- * @package inhere\gearman\jobs
+ * @package inhere\gearman\examples\jobs
  */
 class EchoJob extends Job
 {

@@ -70,7 +70,7 @@ bool WorkerManager::addFunction(string $name, mixed $handler, array $opts = []) 
 ```php
 // $mgr 是 inhere\gearman\GwManager 的实例
 
-$mgr->addHandler('echo_job', \inhere\gearman\jobs\EchoJob::class);
+$mgr->addHandler('echo_job', \inhere\gearman\examples\jobs\EchoJob::class);
 
 /**
  * test

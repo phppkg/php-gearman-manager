@@ -93,7 +93,6 @@ abstract class Job implements JobInterface
      */
     abstract protected function doRun($workload, \GearmanJob $job);
 
-
     /**
      * afterRun
      * @param mixed $result

@@ -137,7 +137,7 @@ $mgr->addHandler('reverse_string', function ($string, \GearmanJob $job)
 $mgr->addHandler('test_job', TestJob::class);
 
 // use a class implement the interface `inhere\gearman\jobs\JobInterface`, add some option for the job.
-$mgr->addHandler('echo_job', \inhere\gearman\jobs\EchoJob::class, [
+$mgr->addHandler('echo_job', \inhere\gearman\examples\jobs\EchoJob::class, [
     'worker_num' => 2,
     'focus_on' => 1,
 ]);
