@@ -126,6 +126,8 @@ class Manager extends LiteManager
     protected function startWatchModify()
     {
         if ($this->config['watch_modify'] && ($loaderFile = $this->config['loader_file'])) {
+            $this->log("code watch is running.", self::LOG_DEBUG);
+
             $lastCheckTime = 0;
             $checkInterval = $this->config['watch_modify_interval'];
 
@@ -186,7 +188,7 @@ class Manager extends LiteManager
         unset($gmWorker);
 
         // Since we got here, all must be ok, send a CONTINUE
-        $this->log("code watch is running. Sending SIGCONT(continue) to master(PID:{$this->masterPid}).", self::LOG_PROC_INFO);
+        $this->log("Server address verify success. Sending SIGCONT(continue) to master(PID:{$this->masterPid}).", self::LOG_PROC_INFO);
         posix_kill($this->masterPid, SIGCONT);
     }
 

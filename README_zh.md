@@ -100,14 +100,13 @@ PUBLIC OPTIONS:
   -D,--dump [all]    Parse the command line and config file then dump it to the screen and exit.
 ```
 
-
 ## 添加job handler(工作处理器)
 
 方法原型：
 
 ```php
-bool WorkerManager::addHandler(string $name, mixed $handler, array $opts = [])
-bool WorkerManager::addFunction(string $name, mixed $handler, array $opts = []) // addHandler 的别名方法
+bool BaseManager::addHandler(string $name, mixed $handler, array $opts = [])
+bool BaseManager::addFunction(string $name, mixed $handler, array $opts = []) // addHandler 的别名方法
 ```
 
 参数：
