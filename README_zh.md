@@ -2,16 +2,45 @@
 
 php 的 gearman workers 管理工具。
 
-可同时启动并管理多个gearman worker,可以设置每个worker的最大执行时间和最大job执行数量，到达设定值后。会自动重启worker，防止进程僵死
+学习并参考自项目 **[brianlmoon/GearmanManager](https://github.com/brianlmoon/GearmanManager)**, 
 
-学习并参考自项目 **[brianlmoon/GearmanManager](https://github.com/brianlmoon/GearmanManager)**, 非常感谢这个项目.
+代码风格有点老了:)，并且是以一个文件些一个函数的方式添加job handler. 没有停止等命令。
 
-add some feature:
+但是非常感谢这个项目，大部分逻辑思想都来自于它。
 
-- Code is easier to read and understand
-- Can support `reload` `restart` `stop` `status` command
+功能特色:
 
-> 只支持 linux 环境， 需要php的 `pcntl` `posix` 扩展
+- 可同时启动并管理多个gearman worker，并会监控运行状态，worker异常退出会自动再重启一个对应的worker
+- 可以设置每个worker的最大执行时间(默认一小时左右)和最大job执行数量(默认3000个)，到达设定值后,会自动重启worker，防止进程僵死
+- 可以自定义worker数量，也可以针对job设置worker数量。还可以让worker专注指定的job。
+- 代码容易阅读和理解，写了较多细的注释:)
+- 支持 `start` `reload` `restart` `stop` `status` 命令，重启不会干扰job的完成(worker会等待当前job处理后退出)
+- 支持守护进程方式运行
+- 详细的运行日志(启动、重启、停止、收到job...)，可以按天或小时存放日志. 可以自定义日志级别
+- 内置了几个有趣的job handler 基类，可以快速的上手。 `examples` 目录下的可以直接运行，当然得先安装好 gearmand server.
+
+> 只支持 linux 环境， 需要php的 `pcntl` `posix` 扩展. macOs 应该也可以用，但没测试。
+
+## manager 配置
+
+全部的配置项请查看 `BaseManager::$config`
+
+## jobs 配置
+
+可以针对job进行特殊配置, 下面是可用配置项:
+
+```php
+// BaseManager::$defaultJobOpt
+[
+    // 需要 'worker_num' 个 worker 处理这个 job
+    'worker_num' => 0,
+    // 当设置 focus_on = true, 这些 worker 将专注这一个job
+    'focus_on' => false, // true | false
+    // job 执行超时时间 秒
+    'timeout' => 200,
+]
+```
+
 
 ## 基本命令
 
@@ -19,36 +48,39 @@ add some feature:
 
 ```bash
 // 启动
-php bin/manager.php 
-// 强制后台运行
-php bin/manager.php --daemon 
+php examples/gwm.php 
+// 后台运行
+php examples/gwm.php -d
+php examples/gwm.php --daemon
 ```
 
 ### 停止 
 
 ```bash 
-php bin/manager.php stop
+php examples/gwm.php stop
 ```
 
 ### 重启
 
 ```bash
-php bin/manager.php restart
+php examples/gwm.php restart
 ```
 
 ### 其他
 
 ```bash
 // 查看帮助信息 可看到更多的可用选项
-php bin/manager.php --help
+php examples/gwm.php --help
 
 // 打印manager配置信息
-php bin/manager.php -D
+php examples/gwm.php -D
 ```
 
 ## 命令以及选项说明
 
 在命令行里使用 `php examples/gwm.php -h` 可以查看到所有的命令和选项信息
+
+> 命令行里设定的选项将会覆盖文件配置。
 
 ```
 root@php5-dev:/var/www/phplang/library/gearman-manager# php examples/gwm.php -h
@@ -68,13 +100,13 @@ COMMANDS:
 
 SPECIAL OPTIONS:
   start/restart
-    -w,--watch         Automatically watch and reload when 'loader_file' has been modify
+    -w,--watch         Automatically watch and reload when 'loader_file' has been modify(TODO)
     -d,--daemon        Daemon, detach and run in the background
-       --jobs          Only register the assigned jobs, multi job name separated by commas(',')
-       --no-test       Not add test handler, when job name prefix is 'test'.(eg: test_job)
+       --jobs          Only register the assigned jobs, multi job name separated by commas(',') // 设定只加载这几个job handler，防止其他的job干扰。测试时很有用，
+       --no-test       Not add test handler, when job name prefix is 'test'.(eg: test_job) // 不加载以test为前缀的handler。如在生产环境时
 
   status
-    --cmd COMMAND      Send command when connect to the job server. allow:status,workers.(default:status)
+    --cmd COMMAND      Send command when connect to the job server. allow:status,workers.(default:status) // 查看job server的信息
     --watch-status     Watch status command, will auto refresh status.
 
 PUBLIC OPTIONS:
@@ -89,7 +121,7 @@ PUBLIC OPTIONS:
   -l LOG_FILE        Log output to LOG_FILE or use keyword 'syslog' for syslog support
   -p PID_FILE        File to write master process ID out to
 
-  -r NUMBER          Maximum run job iterations per worker
+  -r NUMBER          Maximum run job iterations per worker // 启动多少个worker来做job。这些worker是随机接收并处理job。如需对某个job特殊处理，需单独配置它
   -x SECONDS         Maximum seconds for a worker to live
   -t SECONDS         Number of seconds gearmand server should wait for a worker to complete work before timing out
 

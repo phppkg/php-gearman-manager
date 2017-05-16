@@ -77,7 +77,7 @@ interface ManagerInterface
     const WORKER_NUM = 1;
     const JOB_TIMEOUT = 300;
     const MAX_LIFETIME = 3600;
-    const MAX_RUN_JOBS = 2000;
+    const MAX_RUN_JOBS = 3000;
     const RESTART_SPLAY = 600;
     const WATCH_INTERVAL = 300;
 

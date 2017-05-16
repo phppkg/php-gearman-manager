@@ -195,11 +195,11 @@ class Manager extends LiteManager
     /**
      * {@inheritDoc}
      */
-    protected function startWorker($jobs, $isFirst = true)
+    protected function startWorker($jobs, $workerId, $isFirst = true)
     {
         $this->isHelper = false;
 
-        parent::startWorker($jobs, $isFirst);
+        parent::startWorker($jobs, $workerId, $isFirst);
     }
 
     /**

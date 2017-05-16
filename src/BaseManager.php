@@ -114,9 +114,11 @@ abstract class BaseManager implements ManagerInterface
      * workers
      * @var array
      * [
-     *  pid => [
+     *  id => [
+     *      'pid' => [],
      *      'jobs' => [],
-     *      'start_time' => int
+     *      'start_time' => int,
+     *      'start_times' => int
      *  ]
      * ]
      */
@@ -203,8 +205,8 @@ abstract class BaseManager implements ManagerInterface
         'max_lifetime' => 3600,
         // now, max_lifetime is >= 3600 and <= 4200
         'restart_splay' => 600,
-        // max run 2000 job of each worker, after will auto restart.
-        'max_run_jobs' => 2000,
+        // max run 3000 job of each worker, after will auto restart.
+        'max_run_jobs' => 3000,
 
         // the master process pid save file
         'pid_file' => 'gwm.pid',
@@ -466,6 +468,9 @@ abstract class BaseManager implements ManagerInterface
         $this->config['max_lifetime'] = (int)$config['max_lifetime'];
         $this->config['max_run_jobs'] = (int)$config['max_run_jobs'];
         $this->config['restart_splay'] = (int)$config['restart_splay'];
+
+        $this->config['user'] = trim($config['user']);
+        $this->config['group'] = trim($config['group']);
 
         $this->config['watch_modify'] = (bool)$config['watch_modify'];
         $this->config['watch_modify_interval'] = (int)$config['watch_modify_interval'];
