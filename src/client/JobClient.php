@@ -7,6 +7,7 @@
  */
 
 namespace inhere\gearman\client;
+
 use inhere\gearman\traits\EventTrait;
 
 /**
@@ -176,7 +177,7 @@ class JobClient
      * add background job
      * @param string $funcName
      * @param string $workload
-     * @param int   $retry 添加失败时重试次数
+     * @param int $retry 添加失败时重试次数
      * @param null $unique
      * @param string $clientMethod
      * @return mixed

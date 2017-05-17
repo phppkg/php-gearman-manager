@@ -6,10 +6,8 @@
 use inhere\gearman\Helper;
 
 error_reporting(E_ALL | E_STRICT);
-
-require __DIR__ . '/simple-loader.php';
-
 date_default_timezone_set('Asia/Shanghai');
+require __DIR__ . '/simple-autoloader.php';
 
 global $argv;
 $opts = getopt('h', ['help']);

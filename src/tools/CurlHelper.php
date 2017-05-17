@@ -42,7 +42,7 @@ class CurlHelper
     private $config = [
         'base_url' => '',
         'timeout' => 30,
-        'retry'   => 3,
+        'retry' => 3,
 
         'proxy_host' => '',
         'proxy_port' => '',

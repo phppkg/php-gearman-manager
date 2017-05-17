@@ -7,6 +7,7 @@
  */
 
 namespace inhere\gearman\traits;
+
 use inhere\gearman\Helper;
 
 /**
@@ -53,7 +54,7 @@ trait LogTrait
         $data = $data ? json_encode($data) : '';
 
         if ($this->get('log_syslog')) {
-            return $this->sysLog($msg . ' ' . $data, $level);
+            return $this->sysLog(Helper::clearColor($msg) . ' ' . $data, $level);
         }
 
         $label = isset(self::$levels[$level]) ? self::$levels[$level] : self::LOG_INFO;
@@ -75,7 +76,7 @@ trait LogTrait
             // updateLogFile
             $this->updateLogFile();
 
-            fwrite($this->logFileHandle, $logString);
+            fwrite($this->logFileHandle, Helper::clearColor($logString));
         }
 
         return true;

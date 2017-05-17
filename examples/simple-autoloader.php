@@ -9,10 +9,10 @@
 
 spl_autoload_register(function($class)
 {
-    // e.g. "inhere\gearman\Helper"
+    // e.g. "inhere\gearman\examples\jobs\TestJob"
     if (0 === strpos($class,'inhere\\gearman\\examples\\')) {
         $path = str_replace('\\', '/', substr($class, strlen('inhere\\gearman\\examples\\')));
-        $file = dirname(__DIR__) . "/{$path}.php";
+        $file = __DIR__ . "/{$path}.php";
 
         if (is_file($file)) {
             include $file;

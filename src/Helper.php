@@ -98,23 +98,23 @@ class Helper
      * @var array
      */
     public static $styles = [
-        'light_red'    => '1;31',
-        'light_green'  => '1;32',
-        'yellow'       => '1;33',
-        'light_blue'   => '1;34',
-        'magenta'      => '1;35',
-        'light_cyan'   => '1;36',
-        'white'        => '1;37',
-        'normal'        => '0',
-        'black'        => '0;30',
-        'red'          => '0;31',
-        'green'        => '0;32',
-        'brown'        => '0;33',
-        'blue'         => '0;34',
-        'cyan'         => '0;36',
-        'bold'         => '1',
-        'underscore'   => '4',
-        'reverse'      => '7',
+        'light_red' => '1;31',
+        'light_green' => '1;32',
+        'yellow' => '1;33',
+        'light_blue' => '1;34',
+        'magenta' => '1;35',
+        'light_cyan' => '1;36',
+        'white' => '1;37',
+        'normal' => '0',
+        'black' => '0;30',
+        'red' => '0;31',
+        'green' => '0;32',
+        'brown' => '0;33',
+        'blue' => '0;34',
+        'cyan' => '0;36',
+        'bold' => '1',
+        'underscore' => '4',
+        'reverse' => '7',
     ];
 
     /**
@@ -136,5 +136,11 @@ class Helper
         }
 
         return $result;
+    }
+
+    public static function clearColor($text)
+    {
+        // return preg_replace('/\033\[(?:\d;?)+m/', '' , "\033[0;36mtext\033[0m");
+        return preg_replace('/\033\[(?:\d;?)+m/', '', $text);
     }
 }

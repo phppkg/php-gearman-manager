@@ -75,12 +75,12 @@ class Logger extends JobClient
      */
     public function log($message, array $data = [], $level = 'INFO')
     {
-        $this->addJob($this->queue,[
-            'level'   => strtoupper($level),
+        $this->addJob($this->queue, [
+            'level' => strtoupper($level),
             'message' => $message,
-            'data'    => $data,
-            'time'    => time(),
-            'host'    => gethostname(),
+            'data' => $data,
+            'time' => time(),
+            'host' => gethostname(),
         ], null, 'doBackground');
     }
 

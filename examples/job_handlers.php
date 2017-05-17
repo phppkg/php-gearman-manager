@@ -1,32 +1,17 @@
 <?php
 /**
  * job callbacks
- * @var \inhere\gearman\WorkerManager $mgr
+ * @var \inhere\gearman\BaseManager $mgr
  */
 
-/**
- * a class implement the '__invoke()'
- */
-class TestJob
+$mgr->addHandler('test_reverse', function ($string, \GearmanJob $job)
 {
-    public function __invoke($workload, \GearmanJob $job)
-    {
-        echo "from TestJob, call by __invoke";
-    }
-}
-
-$mgr->addHandler('test_reverse_string', function ($string, \GearmanJob $job)
-{
-    $result = strrev($string);
-
-    echo "Result: $result\n";
-
-    return $result;
+    echo ucwords(strrev($workload)) . PHP_EOL;
 });
 
-$mgr->addHandler('test_job', TestJob::class);
+$mgr->addHandler('test_job', \inhere\gearman\examples\jobs\TestJob::class);
 
-$mgr->addHandler('test_echo_job', \inhere\gearman\jobs\EchoJob::class, [
-    'worker_num' => 2,
+$mgr->addHandler('test_echo', \inhere\gearman\examples\jobs\EchoJob::class, [
+    'worker_num' => 1,
     'focus_on' => 1,
 ]);

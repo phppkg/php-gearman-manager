@@ -8,13 +8,14 @@
 
 namespace inhere\gearman\traits;
 
+use inhere\gearman\Helper;
+
 /**
  * Class WorkerTrait
  * @package inhere\gearman\traits
  */
 trait WorkerTrait
 {
-
     /**
      * The worker id
      * @var int
@@ -89,7 +90,11 @@ trait WorkerTrait
             }
         }
 
-        $this->log("Started workers: $lastWorkerId,Jobs assigned workers count:\n" . print_r($workersCount, true), self::LOG_DEBUG);
+        $this->log(sprintf(
+            "Started workers number: %s,Jobs assigned workers info:%s\n",
+            Helper::color($lastWorkerId, 'green'),
+            print_r($workersCount, true)
+        ), self::LOG_DEBUG);
     }
 
     /**
@@ -144,7 +149,7 @@ trait WorkerTrait
                 }
 
                 $code = $this->startDriverWorker($jobAry, $timeouts);
-                $this->log("Worker #$workerId exiting(PID:{$this->pid} Code:$code)", self::LOG_WORKER_INFO);
+                $this->log("Worker #$workerId exiting(Exit-Code:$code)", self::LOG_WORKER_INFO);
 
                 $this->quit($code);
                 break;
@@ -178,12 +183,10 @@ trait WorkerTrait
 
         // Main processing loop for the parent process
         while (!$this->stopWork || count($this->workers)) {
-            // receive and dispatch sig
-            pcntl_signal_dispatch();
-
-            $status = null;
+            $this->dispatchSignal();
 
             // Check for exited workers
+            $status = null;
             $exitedPid = pcntl_wait($status, WNOHANG);
 
             // We run other workers, make sure this is a worker
@@ -252,8 +255,6 @@ trait WorkerTrait
             return false;
         }
 
-        static $stopping = false;
-
         $signals = [
             SIGINT => 'SIGINT(Ctrl+C)',
             SIGTERM => 'SIGTERM',
@@ -263,7 +264,7 @@ trait WorkerTrait
         $this->log("Stopping workers({$signals[$signal]}) ...", self::LOG_PROC_INFO);
 
         foreach ($this->workers as $pid => $worker) {
-            $this->log("Stopping worker (PID:$pid) (Jobs:".implode(",", $worker['jobs']).")", self::LOG_PROC_INFO);
+            $this->log("Stopping worker (PID:$pid) (Jobs:" . implode(",", $worker['jobs']) . ")", self::LOG_PROC_INFO);
 
             // send exit signal.
             $this->killProcess($pid, $signal);

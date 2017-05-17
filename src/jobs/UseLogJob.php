@@ -29,7 +29,7 @@ abstract class UseLogJob extends Job
      */
     protected function onException(\Exception $e)
     {
-        $this->err($e->getMessage() . "\n Trace \n" . $e->getTraceAsString());
+        $this->err("Error({$e->getCode()}): {$e->getMessage()} \nTrace \n" . $e->getTraceAsString());
     }
 
     /**

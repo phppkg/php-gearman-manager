@@ -8,6 +8,8 @@
 
 namespace inhere\gearman\examples\jobs;
 
+use inhere\gearman\jobs\Job;
+
 /**
  * Class EchoJob
  * @package inhere\gearman\examples\jobs
@@ -19,6 +21,6 @@ class EchoJob extends Job
      */
     protected function doRun($workload, \GearmanJob $job)
     {
-        echo "receive: $workload";
+        echo "receive: $workload\n";
     }
 }

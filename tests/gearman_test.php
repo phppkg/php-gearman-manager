@@ -7,10 +7,8 @@
  */
 
 error_reporting(E_ALL | E_STRICT);
-
-require __DIR__ . '/simple-loader.php';
-
 date_default_timezone_set('Asia/Shanghai');
+require dirname(__DIR__) . '/examples/simple-autoloader.php';
 
 $opts = getopt('s:h', ['server:', 'help']);
 
@@ -37,13 +35,13 @@ $client = new \inhere\gearman\client\JobClient([
     'servers' => isset($opts['s']) ? $opts['s'] : (isset($opts['server']) ? $opts['server'] : ''),
 ]);
 
-$ret[] = $client->doNormal('test_reverse_string', 'hello a');
-$ret[] = $client->doBackground('test_reverse_string', 'hello b');
-$ret[] = $client->doBackground('test_reverse_string', 'hello c');
-$ret[] = $client->doHighBackground('test_reverse_string', 'hello d');
+$ret[] = $client->doNormal('test_reverse', 'hello a');
+$ret[] = $client->doBackground('test_reverse', 'hello b');
+$ret[] = $client->doBackground('test_reverse', 'hello c');
+$ret[] = $client->doHighBackground('test_reverse', 'hello d');
 
-$ret[] = $client->doBackground('test_echo', 'hello welcome');
+$ret[] = $client->doBackground('test_job', 'hello welcome');
 
-$ret[] = $client->doBackground('test_echo_job', 'hello welcome!!');
+$ret[] = $client->doBackground('test_echo', 'hello welcome!!');
 
 var_dump($ret);

@@ -126,10 +126,8 @@ class Manager extends LiteManager
                 $this->helperPid = $pid;
 
                 while ($this->waitForSignal && !$this->stopWork) {
-                    usleep(5000);
+                    $this->dispatchSignal();
 
-                    // receive and dispatch sig
-                    pcntl_signal_dispatch();
                     pcntl_waitpid($pid, $status, WNOHANG);
                     $exitCode = pcntl_wexitstatus($status);
 
@@ -141,47 +139,11 @@ class Manager extends LiteManager
                         $this->log("Helper process exited with non-zero exit code [$exitCode].");
                         $this->quit($exitCode);
                     }
+
+                    usleep(10000);
                 }
                 break;
         }
-    }
-
-    /**
-     * Forked method that watch the worker code and checks it if desired
-     * @old validateWorkers()
-     */
-    protected function startWatchModify()
-    {
-        if ($this->config['watch_modify'] && ($loaderFile = $this->config['loader_file'])) {
-            $this->log("code watcher is running.", self::LOG_DEBUG);
-
-            $lastCheckTime = 0;
-            $checkInterval = $this->config['watch_modify_interval'];
-
-            $this->log("Running loop to watch modify(interval:{$checkInterval}s) for 'loader_file': $loaderFile", self::LOG_DEBUG);
-
-            while (!$this->stopWork) {
-                // $maxTime = 0;
-                $mdfTime = filemtime($loaderFile);
-                // $maxTime = max($maxTime, $mdfTime);
-
-                $this->log("'loader_file': {$loaderFile} - MODIFY TIME: $mdfTime,LAST CHECK TIME: $lastCheckTime", self::LOG_DEBUG);
-
-                if ($lastCheckTime && $mdfTime > $lastCheckTime) {
-                    clearstatcache();
-                    $this->log("New code modify found. Sending SIGHUP(reload) to master(PID:{$this->masterPid})", self::LOG_PROC_INFO);
-                    $this->sendSignal($this->masterPid, SIGHUP);
-                    break;
-                }
-
-                $lastCheckTime = time();
-                sleep($checkInterval);
-            }
-        }
-
-        $this->log('Helper stopping', self::LOG_PROC_INFO);
-
-        $this->quit();
     }
 
     /**
@@ -216,7 +178,45 @@ class Manager extends LiteManager
 
         // Since we got here, all must be ok, send a CONTINUE
         $this->log("Server address verify success. Sending SIGCONT(continue) to master(PID:{$this->masterPid}).", self::LOG_PROC_INFO);
-        posix_kill($this->masterPid, SIGCONT);
+        $this->sendSignal($this->masterPid, SIGCONT);
+    }
+
+    /**
+     * Forked method that watch the worker code and checks it if desired
+     * @old validateWorkers()
+     */
+    protected function startWatchModify()
+    {
+        if ($this->config['watch_modify'] && ($loaderFile = $this->config['loader_file'])) {
+            $lastCheckTime = 0;
+            $checkInterval = $this->config['watch_modify_interval'];
+
+            $this->log("Running loop to watch modify(interval:{$checkInterval}s) for 'loader_file': $loaderFile", self::LOG_DEBUG);
+
+            while (!$this->stopWork) {
+                $this->dispatchSignal();
+
+                // $maxTime = 0;
+                $mdfTime = filemtime($loaderFile);
+                // $maxTime = max($maxTime, $mdfTime);
+
+                $this->log("'loader_file': {$loaderFile} - MODIFY TIME: $mdfTime,LAST CHECK TIME: $lastCheckTime", self::LOG_DEBUG);
+
+                if ($lastCheckTime && $mdfTime > $lastCheckTime) {
+                    clearstatcache();
+                    $this->log("New code modify found. Sending SIGHUP(reload) to master(PID:{$this->masterPid})", self::LOG_PROC_INFO);
+                    $this->sendSignal($this->masterPid, SIGHUP);
+                    break;
+                }
+
+                $lastCheckTime = time();
+                sleep($checkInterval);
+            }
+        }
+
+        $this->log('Helper stopping', self::LOG_PROC_INFO);
+
+        $this->quit();
     }
 
     /**
@@ -250,7 +250,7 @@ class Manager extends LiteManager
         parent::registerSignals($isMaster);
 
         if ($isMaster) {
-            pcntl_signal(SIGCONT, array($this, 'signalHandler'));
+            pcntl_signal(SIGCONT, [$this, 'signalHandler'], false);
         }
     }
 
@@ -261,10 +261,10 @@ class Manager extends LiteManager
     public function signalHandler($sigNo)
     {
         if ($this->isMaster && $sigNo === SIGCONT) {
-            $this->log('Validation through, continue(SIGCONT)...', self::LOG_PROC_INFO);
+            $this->log('Validation through, continue(SIGCONT) start manager...', self::LOG_PROC_INFO);
             $this->waitForSignal = false;
         } else {
-            parent::registerSignals($sigNo);
+            parent::signalHandler($sigNo);
         }
     }
 
@@ -345,13 +345,5 @@ EOF;
     public function getPidRole()
     {
         return $this->isMaster ? 'Master' : ($this->isHelper ? 'Helper' : 'Worker');
-    }
-
-    /**
-     * @param \Closure $loader
-     */
-    public function setHandlersLoader(\Closure $loader)
-    {
-        $this->handlersLoader = $loader;
     }
 }

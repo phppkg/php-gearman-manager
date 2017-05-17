@@ -11,10 +11,8 @@ use \inhere\gearman\Manager;
 use inhere\gearman\tools\FileLogger;
 
 error_reporting(E_ALL | E_STRICT);
-
-require __DIR__ . '/simple-loader.php';
-
 date_default_timezone_set('Asia/Shanghai');
+require __DIR__ . '/simple-autoloader.php';
 
 // create job logger
 // use: FileLogger::info('message', ['data'], 'test_job');

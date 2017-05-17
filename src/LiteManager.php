@@ -60,8 +60,7 @@ class LiteManager extends BaseManager
         $maxRun = $this->config['max_run_jobs'];
 
         while (!$this->stopWork) {
-            // receive and dispatch sig
-            pcntl_signal_dispatch();
+            $this->dispatchSignal();
 
             if (
                 @$gmWorker->work() ||

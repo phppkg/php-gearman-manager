@@ -83,7 +83,8 @@ abstract class Job implements JobInterface
      * @param \GearmanJob $job
      */
     protected function beforeRun($workload, \GearmanJob $job)
-    {}
+    {
+    }
 
     /**
      * doRun
@@ -98,7 +99,8 @@ abstract class Job implements JobInterface
      * @param mixed $result
      */
     protected function afterRun($result)
-    {}
+    {
+    }
 
     /**
      * @param \Exception $e

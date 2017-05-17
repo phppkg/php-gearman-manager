@@ -169,7 +169,7 @@ class Telnet
 
     /**
      * watch a command
-     * @param  string  $command
+     * @param  string $command
      * @param  integer $interval (ms)
      */
     public function watch($command, $interval = 500)

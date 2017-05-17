@@ -87,7 +87,7 @@ interface ManagerInterface
     const CODE_MANUAL_KILLED = -500;
     const CODE_NORMAL_EXITED = 0;
     const CODE_CONNECT_ERROR = 170;
-    const CODE_NO_HANDLERS   = 171;
+    const CODE_NO_HANDLERS = 171;
     const CODE_UNKNOWN_ERROR = 180;
 
     /**

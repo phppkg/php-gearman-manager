@@ -18,50 +18,6 @@ use inhere\gearman\Helper;
  */
 trait ProcessControlTrait
 {
-    /**
-     * @param string $user
-     * @param string $group
-     */
-    protected function changeScriptOwner($user, $group = '')
-    {
-        $uInfo = posix_getpwnam($user);
-
-        if (!$uInfo || !isset($uInfo['uid'])) {
-            $this->showHelp("User ({$user}) not found.");
-        }
-
-        $uid = (int)$uInfo['uid'];
-
-        // Get gid.
-        if ($group) {
-            if (!$gInfo = posix_getgrnam($group)) {
-                $this->showHelp("Group {$group} not exists", -300);
-            }
-
-            $gid = (int)$gInfo['gid'];
-        } else {
-            $gid = (int)$uInfo['gid'];
-        }
-
-        if (!posix_initgroups($uInfo['name'], $gid)) {
-            $this->showHelp("The user [{$user}] is not in the user group ID [GID:{$gid}]", -300);
-        }
-
-        posix_setgid($gid);
-
-        if (posix_geteuid() !== $gid) {
-            $this->showHelp("Unable to change group to {$user} (UID: {$gid}).", -300);
-        }
-
-        posix_setuid($uid);
-
-        if (posix_geteuid() !== $uid) {
-            $this->showHelp("Unable to change user to {$user} (UID: {$uid}).", -300);
-        }
-
-        $this->log("User set to {$user}", self::LOG_PROC_INFO);
-    }
-
 //////////////////////////////////////////////////////////////////////
 /// process control method
 //////////////////////////////////////////////////////////////////////
@@ -164,8 +120,7 @@ trait ProcessControlTrait
         pcntl_signal(SIGPIPE, SIG_IGN, false);
 
         if ($isMaster) {
-            // $signals = ['SIGTERM' => 'close worker', ];
-            $this->log('Registering signal handlers for master(parent) process', self::LOG_DEBUG);
+            $this->log('Registering signal handlers for master process', self::LOG_DEBUG);
 
             pcntl_signal(SIGTERM, [$this, 'signalHandler'], false);
             pcntl_signal(SIGINT, [$this, 'signalHandler'], false);
@@ -179,6 +134,15 @@ trait ProcessControlTrait
                 $this->quit(-170);
             }
         }
+    }
+
+    /**
+     * dispatchSignal
+     */
+    protected function dispatchSignal()
+    {
+        // receive and dispatch sig
+        pcntl_signal_dispatch();
     }
 
     /**
@@ -287,5 +251,49 @@ trait ProcessControlTrait
         }
 
         return $ret;
+    }
+
+    /**
+     * @param string $user
+     * @param string $group
+     */
+    protected function changeScriptOwner($user, $group = '')
+    {
+        $uInfo = posix_getpwnam($user);
+
+        if (!$uInfo || !isset($uInfo['uid'])) {
+            $this->showHelp("User ({$user}) not found.");
+        }
+
+        $uid = (int)$uInfo['uid'];
+
+        // Get gid.
+        if ($group) {
+            if (!$gInfo = posix_getgrnam($group)) {
+                $this->showHelp("Group {$group} not exists", -300);
+            }
+
+            $gid = (int)$gInfo['gid'];
+        } else {
+            $gid = (int)$uInfo['gid'];
+        }
+
+        if (!posix_initgroups($uInfo['name'], $gid)) {
+            $this->showHelp("The user [{$user}] is not in the user group ID [GID:{$gid}]", -300);
+        }
+
+        posix_setgid($gid);
+
+        if (posix_geteuid() !== $gid) {
+            $this->showHelp("Unable to change group to {$user} (UID: {$gid}).", -300);
+        }
+
+        posix_setuid($uid);
+
+        if (posix_geteuid() !== $uid) {
+            $this->showHelp("Unable to change user to {$user} (UID: {$uid}).", -300);
+        }
+
+        $this->log("User set to {$user}", self::LOG_PROC_INFO);
     }
 }

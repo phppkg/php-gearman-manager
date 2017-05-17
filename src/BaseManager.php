@@ -130,7 +130,7 @@ abstract class BaseManager implements ManagerInterface
      */
     protected $meta = [
         'start_time' => 0,
-        'stop_time'  => 0,
+        'stop_time' => 0,
         'start_times' => 0,
     ];
 
@@ -307,7 +307,7 @@ abstract class BaseManager implements ManagerInterface
                 $this->reloadWorkers($masterPid);
                 break;
             case 'status':
-                $cmd = isset($result['cmd']) ? $result['cmd']: 'status';
+                $cmd = isset($result['cmd']) ? $result['cmd'] : 'status';
                 $this->showStatus($cmd, isset($result['watch-status']));
                 break;
             default:
@@ -422,6 +422,7 @@ abstract class BaseManager implements ManagerInterface
         $this->config['daemon'] = (bool)$config['daemon'];
         $this->config['pid_file'] = trim($config['pid_file']);
         $this->config['worker_num'] = (int)$config['worker_num'];
+        $this->config['servers'] = str_replace(' ', '', $config['servers']);
 
         $this->config['log_level'] = (int)$config['log_level'];
         $logFile = trim($config['log_file']);
@@ -483,7 +484,8 @@ abstract class BaseManager implements ManagerInterface
 //////////////////////////////////////////////////////////////////////
 
     protected function beforeStart()
-    {}
+    {
+    }
 
     /**
      * do start run manager
@@ -501,14 +503,14 @@ abstract class BaseManager implements ManagerInterface
         $this->isMaster = true;
         $this->stopWork = false;
         $this->meta['start_time'] = time();
-        $this->setProcessTitle(sprintf("php-gwm: master process%s (%s)", $this->getShowName(), getcwd() . $this->fullScript));
+        $this->setProcessTitle(sprintf("php-gwm: master process%s (%s)", $this->getShowName(), getcwd() . '/' . $this->fullScript));
 
         // prepare something for start
         $this->prepare();
 
         $this->log("Started manager with pid {$this->pid}, Current script owner: " . get_current_user(), self::LOG_PROC_INFO);
 
-        // Register signal listeners `pcntl_signal_dispatch()`
+        // Register signal listeners
         $this->registerSignals();
 
         // before Start Workers
@@ -527,7 +529,8 @@ abstract class BaseManager implements ManagerInterface
      * beforeStartWorkers
      */
     protected function beforeStartWorkers()
-    {}
+    {
+    }
 
     /**
      * afterStart
@@ -624,7 +627,7 @@ abstract class BaseManager implements ManagerInterface
         }
 
         // no test handler
-        if ($this->config['no_test'] && 0 === strpos($name,'test')) {
+        if ($this->config['no_test'] && 0 === strpos($name, 'test')) {
             return false;
         }
 
@@ -751,7 +754,7 @@ abstract class BaseManager implements ManagerInterface
 
             case 'status':
             default:
-            $this->stdout("There are jobs status info:\n");
+                $this->stdout("There are jobs status info:\n");
                 $result = $telnet->command('status');
 
                 break;
@@ -842,7 +845,7 @@ EOF;
      */
     protected function dumpInfo($allInfo = false)
     {
-         if ($allInfo) {
+        if ($allInfo) {
             $this->stdout("There are all information of the manager:");
             Helper::printR($this);
         } else {
@@ -1056,7 +1059,7 @@ EOF;
      */
     public function getServers($toArray = true)
     {
-        $servers = str_replace(' ', '', $this->get('servers', ''));
+        $servers = $this->config['servers'];
 
         if ($toArray) {
             $servers = strpos($servers, ',') ? explode(',', $servers) : [$servers];
