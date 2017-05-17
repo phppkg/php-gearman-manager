@@ -141,7 +141,7 @@ class LiteManager extends BaseManager
         $ret = null;
         $this->jobExecCount++;
 
-        $this->log("doJob: ($h) Starting job: $name, now run job count: {$this->jobExecCount}", self::LOG_WORKER_INFO);
+        $this->log("doJob: ($h) Starting job: $name, executed job count: {$this->jobExecCount}", self::LOG_WORKER_INFO);
         $this->log("doJob: ($h) Job $name workload: $wl", self::LOG_DEBUG);
         $this->trigger(self::EVENT_BEFORE_WORK, [$job]);
 

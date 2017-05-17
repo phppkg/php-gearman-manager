@@ -160,7 +160,7 @@ trait ProcessControlTrait
      */
     protected function registerSignals($isMaster = true)
     {
-        // ignore
+        // ignore SIGPIPE
         pcntl_signal(SIGPIPE, SIG_IGN, false);
 
         if ($isMaster) {
@@ -193,7 +193,7 @@ trait ProcessControlTrait
             switch ($sigNo) {
                 case SIGINT: // Ctrl + C
                 case SIGTERM:
-                    $sigText = $sigNo === SIGINT ? 'SIGINT(Ctrl + C)' : 'SIGTERM';
+                    $sigText = $sigNo === SIGINT ? 'SIGINT(Ctrl+C)' : 'SIGTERM';
                     $this->log("Shutting down($sigText)...", self::LOG_PROC_INFO);
                     $this->stopWork();
                     $stopCount++;
@@ -201,7 +201,7 @@ trait ProcessControlTrait
                     if ($stopCount < 5) {
                         $this->stopWorkers();
                     } else {
-                        $this->log('Stop workers failed by(SIGTERM), force kill workers by(signal:SIGKILL)', self::LOG_PROC_INFO);
+                        $this->log("Stop workers failed by($sigText), will force kill workers by(SIGKILL)", self::LOG_PROC_INFO);
                         $this->stopWorkers(SIGKILL);
                     }
                     break;
@@ -223,7 +223,7 @@ trait ProcessControlTrait
 
         } else {
             $this->stopWork();
-            $this->log("Received 'stopWork' signal(signal:SIGTERM), will be exiting.", self::LOG_PROC_INFO);
+            $this->log("Received 'stopWork' signal(SIGTERM), will be exiting.", self::LOG_PROC_INFO);
         }
     }
 
@@ -247,7 +247,7 @@ trait ProcessControlTrait
      * @param int $timeout
      * @return bool
      */
-    public function sendSignal($pid, $signal = SIGTERM, $timeout = 0)
+    public function sendSignal($pid, $signal, $timeout = 0)
     {
         if ($pid <= 0) {
             return false;
@@ -283,7 +283,7 @@ trait ProcessControlTrait
             // try again kill
             $ret = posix_kill($pid, $signal);
 
-            usleep(10000);
+            usleep(50000);
         }
 
         return $ret;

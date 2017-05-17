@@ -14,6 +14,34 @@ namespace inhere\gearman\traits;
  */
 trait WorkerTrait
 {
+
+    /**
+     * The worker id
+     * @var int
+     */
+    protected $id = 0;
+
+    /**
+     * workers
+     * @var array
+     * [
+     *  pid => [
+     *      'id' => [],
+     *      'jobs' => [],
+     *      'start_time' => int,
+     *      'start_times' => int
+     *  ],
+     *  ... ...
+     * ]
+     */
+    protected $workers = [];
+
+    /**
+     * Number of times this worker has run job
+     * @var int
+     */
+    protected $jobExecCount = 0;
+
     /**
      * Bootstrap a set of workers and any vars that need to be set
      */
@@ -53,18 +81,15 @@ trait WorkerTrait
 
             while ($workersCount[$job] < $workerNum) {
                 $lastWorkerId++;
-                $this->startWorker($job, $lastWorkerId);
-
                 $workersCount[$job]++;
+
+                $this->startWorker($job, $lastWorkerId);
 
                 usleep(500000);
             }
         }
 
-        // Set the last code check time to now since we just loaded all the code
-        // $this->lastCheckTime = time();
-
-        $this->log("Jobs workers count:\n" . print_r($workersCount, true), self::LOG_DEBUG);
+        $this->log("Started workers: $lastWorkerId,Jobs assigned workers count:\n" . print_r($workersCount, true), self::LOG_DEBUG);
     }
 
     /**
@@ -182,7 +207,7 @@ trait WorkerTrait
             }
 
             if ($this->stopWork) {
-                if (time() - $this->meta['stop_time'] > 30) {
+                if (time() - $this->meta['stop_time'] > 60) {
                     $this->log('Workers have not exited, force killing.', self::LOG_PROC_INFO);
                     $this->stopWorkers(SIGKILL);
                     // $this->killProcess($pid, SIGKILL);
@@ -229,13 +254,8 @@ trait WorkerTrait
 
         static $stopping = false;
 
-        if ($stopping) {
-            $this->log('Workers stopping ...', self::LOG_PROC_INFO);
-            return true;
-        }
-
         $signals = [
-            SIGINT => 'SIGINT',
+            SIGINT => 'SIGINT(Ctrl+C)',
             SIGTERM => 'SIGTERM',
             SIGKILL => 'SIGKILL',
         ];
@@ -249,11 +269,63 @@ trait WorkerTrait
             $this->killProcess($pid, $signal);
         }
 
-        if ($signal === SIGKILL) {
-            $stopping = true;
-        }
-
         return true;
     }
 
+    /**
+     * @param int $pid
+     * @param array $jobs
+     * @param int $statusCode
+     */
+    protected function logWorkerStatus($pid, $jobs, $statusCode)
+    {
+        $jobStr = implode(',', $jobs);
+
+        switch ((int)$statusCode) {
+            case self::CODE_MANUAL_KILLED:
+                $message = "Worker (PID:$pid) has been running too long. Forcibly killing process. (Jobs:$jobStr)";
+                break;
+            case self::CODE_NORMAL_EXITED:
+                $message = "Worker (PID:$pid) normally exited. (Jobs:$jobStr)";
+                break;
+            case self::CODE_CONNECT_ERROR:
+                $message = "Worker (PID:$pid) connect to job server failed. exiting";
+                $this->stopWork();
+                break;
+            default:
+                $message = "Worker (PID:$pid) died unexpectedly with exit code $statusCode. (Jobs:$jobStr)";
+                break;
+        }
+
+        $this->log($message, self::LOG_PROC_INFO);
+    }
+
+    /**
+     * getWorkerId
+     * @param  int $pid
+     * @return int
+     */
+    public function getWorkerId($pid)
+    {
+        return isset($this->workers[$pid]) ? $this->workers[$pid]['id'] : 0;
+    }
+
+    /**
+     * getPidByWorkerId
+     * @param  int $id
+     * @return int
+     */
+    public function getPidByWorkerId($id)
+    {
+        $thePid = 0;
+
+        foreach ($this->workers as $pid => $item) {
+            if ($id === $item['id']) {
+                $thePid = $pid;
+                break;
+            }
+        }
+
+        return $thePid;
+    }
 }

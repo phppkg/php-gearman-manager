@@ -33,9 +33,4 @@ $config = [
 
 $mgr = new Manager($config);
 
-$mgr->setHandlersLoader(function (Manager $mgr)
-{
-    require __DIR__ . '/job_handlers.php';
-});
-
 $mgr->start();

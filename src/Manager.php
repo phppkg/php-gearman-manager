@@ -38,6 +38,33 @@ class Manager extends LiteManager
      */
     private $handlersLoader;
 
+    /**
+     * @param array $config
+     */
+    protected function initConfigAndProperties(array $config)
+    {
+        $this->config['loader_file'] = trim($config['loader_file']);
+
+        $this->config['watch_modify'] = (bool)$config['watch_modify'];
+        $this->config['watch_modify_interval'] = (int)$config['watch_modify_interval'];
+
+        // parent ...
+        parent::initConfigAndProperties($config);
+
+        if ($file = $this->config['loader_file']) {
+            if (!file_exists($file)) {
+                $this->stderr("The handlers loader file(loader_file) not exists, file: $file");
+            }
+
+            $this->handlersLoader = function (self $mgr) {
+                require $mgr->get('loader_file');
+            };
+        }
+    }
+
+    /**
+     * beforeStart
+     */
     protected function beforeStart()
     {
         // load all job handlers
@@ -95,7 +122,7 @@ class Manager extends LiteManager
                 $this->stopWork();
                 break;
             default: // at parent
-                $this->log("Helper process forked with PID:$pid", self::LOG_PROC_INFO);
+                $this->log("Helper process started with PID:$pid", self::LOG_PROC_INFO);
                 $this->helperPid = $pid;
 
                 while ($this->waitForSignal && !$this->stopWork) {
@@ -126,7 +153,7 @@ class Manager extends LiteManager
     protected function startWatchModify()
     {
         if ($this->config['watch_modify'] && ($loaderFile = $this->config['loader_file'])) {
-            $this->log("code watch is running.", self::LOG_DEBUG);
+            $this->log("code watcher is running.", self::LOG_DEBUG);
 
             $lastCheckTime = 0;
             $checkInterval = $this->config['watch_modify_interval'];
@@ -220,11 +247,11 @@ class Manager extends LiteManager
      */
     protected function registerSignals($isMaster = true)
     {
+        parent::registerSignals($isMaster);
+
         if ($isMaster) {
             pcntl_signal(SIGCONT, array($this, 'signalHandler'));
         }
-
-        parent::registerSignals($isMaster);
     }
 
     /**
@@ -252,7 +279,8 @@ class Manager extends LiteManager
         $commands = Helper::color('COMMANDS:', 'brown');
         $sOptions = Helper::color('SPECIAL OPTIONS:', 'brown');
         $pOptions = Helper::color('PUBLIC OPTIONS:', 'brown');
-        $version = Helper::color(self::VERSION, 'green');
+        $tool = Helper::color('gwm', 'green');
+        $version = Helper::color(self::VERSION, 'brown');
         $script = $this->getScript();
 
         if ($msg) {
@@ -261,7 +289,7 @@ class Manager extends LiteManager
         }
 
         echo <<<EOF
-Gearman worker manager(gwm) script tool. Version $version
+Gearman worker manager($tool) script tool. Version $version
 
 $usage
   $script {COMMAND} -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-w] [-p PID_FILE]
@@ -308,7 +336,7 @@ $pOptions
   -V,--version       Display the version of the manager
   -D,--dump [all]    Parse the command line and config file then dump it to the screen and exit.\n\n
 EOF;
-        exit($code);
+        $this->quit($code);
     }
 
     /**

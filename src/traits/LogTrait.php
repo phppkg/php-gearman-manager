@@ -196,7 +196,7 @@ trait LogTrait
      * @param bool $nl
      * @param bool|int $quit
      */
-    protected function stderr($text, $nl = true, $quit = false)
+    protected function stderr($text, $nl = true, $quit = 0)
     {
         fwrite(\STDERR, Helper::color('ERROR: ', 'red') . $text . ($nl ? PHP_EOL : ''));
 

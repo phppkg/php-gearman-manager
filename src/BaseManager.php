@@ -69,12 +69,6 @@ abstract class BaseManager implements ManagerInterface
     ///////// process control //////////
 
     /**
-     * The worker id
-     * @var int
-     */
-    protected $id = 0;
-
-    /**
      * The PID of the current running process. Set for parent and child processes
      */
     protected $pid = 0;
@@ -105,25 +99,6 @@ abstract class BaseManager implements ManagerInterface
      */
     protected $stopWork = false;
 
-    /**
-     * @var bool
-     */
-    // protected $working = true;
-
-    /**
-     * workers
-     * @var array
-     * [
-     *  id => [
-     *      'pid' => [],
-     *      'jobs' => [],
-     *      'start_time' => int,
-     *      'start_times' => int
-     *  ]
-     * ]
-     */
-    protected $workers = [];
-
     ///////// jobs //////////
 
     /**
@@ -137,12 +112,6 @@ abstract class BaseManager implements ManagerInterface
      * @var integer
      */
     protected $maxLifetime = 3600;
-
-    /**
-     * Number of times this worker has run job
-     * @var int
-     */
-    protected $jobExecCount = 0;
 
     /**
      * List of job handlers(functions) available for work
@@ -257,9 +226,6 @@ abstract class BaseManager implements ManagerInterface
      */
     public function __construct(array $config = [])
     {
-        // checkEnvironment
-        $this->checkEnvironment();
-
         $this->pid = getmypid();
 
         $this->setConfig($config);
@@ -307,6 +273,9 @@ abstract class BaseManager implements ManagerInterface
             $val = isset($result['D']) ? $result['D'] : (isset($result['dump']) ? $result['dump'] : '');
             $this->dumpInfo($val === 'all');
         }
+
+        // checkEnvironment
+        $this->checkEnvironment();
 
         $masterPid = $this->getPidFromFile($this->pidFile);
         $isRunning = $this->isRunning($masterPid);
@@ -471,9 +440,6 @@ abstract class BaseManager implements ManagerInterface
 
         $this->config['user'] = trim($config['user']);
         $this->config['group'] = trim($config['group']);
-
-        $this->config['watch_modify'] = (bool)$config['watch_modify'];
-        $this->config['watch_modify_interval'] = (int)$config['watch_modify_interval'];
 
         // config value fix ... ...
 
@@ -820,7 +786,7 @@ abstract class BaseManager implements ManagerInterface
 
         if ($msg) {
             $code = $code ?: self::CODE_UNKNOWN_ERROR;
-            echo "ERROR:\n  " . wordwrap($msg, 108, "\n  ") . "\n\n";
+            echo Helper::color('ERROR:', 'light_red') . "\n  " . wordwrap($msg, 108, "\n  ") . "\n\n";
         }
 
         echo <<<EOF
@@ -867,7 +833,7 @@ $pOptions
   -V,--version       Display the version of the manager
   -D,--dump [all]    Parse the command line and config file then dump it to the screen and exit.\n\n
 EOF;
-        exit($code);
+        $this->quit($code);
     }
 
     /**
@@ -927,35 +893,6 @@ EOF;
     }
 
     /**
-     * @param int $pid
-     * @param array $jobs
-     * @param int $statusCode
-     */
-    protected function logWorkerStatus($pid, $jobs, $statusCode)
-    {
-        $jobStr = implode(',', $jobs);
-
-        switch ((int)$statusCode) {
-            case self::CODE_MANUAL_KILLED:
-                $message = "Worker (PID:$pid) has been running too long. Forcibly killing process. (Jobs:$jobStr)";
-                break;
-            case self::CODE_NORMAL_EXITED:
-                unset($this->workers[$pid]);
-                $message = "Worker (PID:$pid) normally exited. (Jobs:$jobStr)";
-                break;
-            case self::CODE_CONNECT_ERROR:
-                $message = "Worker (PID:$pid) connect to job server failed. exiting";
-                $this->stopWork();
-                break;
-            default:
-                $message = "Worker (PID:$pid) died unexpectedly with exit code $statusCode. (Jobs:$jobStr)";
-                break;
-        }
-
-        $this->log($message, self::LOG_PROC_INFO);
-    }
-
-    /**
      * checkEnvironment
      */
     protected function checkEnvironment()
@@ -967,8 +904,8 @@ EOF;
             $e1t = $e1 ? 'yes' : 'no';
             $e2t = $e2 ? 'yes' : 'no';
 
-            $this->stdout(
-                "ERROR: Run worker manager of the current system. the posix($e1t),pcntl($e2t) extensions is required.\n",
+            $this->stderr(
+                "Run worker manager of the current system. the posix($e1t),pcntl($e2t) extensions is required.\n",
                 true,
                 -500
             );
