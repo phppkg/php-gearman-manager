@@ -90,7 +90,7 @@ class Helper
 
         $string = ob_get_clean();
 
-        echo preg_replace("/Array\n\s+\(/", 'Array (', $string);
+        return preg_replace("/Array\n\s+\(/", 'Array (', $string);
     }
 
     /**

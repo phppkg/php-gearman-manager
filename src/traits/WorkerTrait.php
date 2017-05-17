@@ -91,9 +91,9 @@ trait WorkerTrait
         }
 
         $this->log(sprintf(
-            "Started workers number: %s,Jobs assigned workers info:%s\n",
+            "Started workers number: %s, Jobs assigned workers info:\n%s",
             Helper::color($lastWorkerId, 'green'),
-            print_r($workersCount, true)
+            Helper::printR($workersCount)
         ), self::LOG_DEBUG);
     }
 
@@ -150,7 +150,6 @@ trait WorkerTrait
 
                 $code = $this->startDriverWorker($jobAry, $timeouts);
                 $this->log("Worker #$workerId exiting(Exit-Code:$code)", self::LOG_WORKER_INFO);
-
                 $this->quit($code);
                 break;
 
@@ -161,8 +160,8 @@ trait WorkerTrait
                 break;
 
             default: // at parent
-                $text = $isFirst ? 'First' : 'Restart';
-                $this->log("Started worker #$workerId(PID:$pid) ($text) (Jobs:" . implode(',', $jobAry) . ')', self::LOG_PROC_INFO);
+                $text = $isFirst ? 'Start' : 'Restart';
+                $this->log("Started worker #$workerId with PID $pid ($text) (Jobs:" . implode(',', $jobAry) . ')', self::LOG_PROC_INFO);
                 $this->workers[$pid] = array(
                     'id' => $workerId,
                     'jobs' => $jobAry,
@@ -228,6 +227,8 @@ trait WorkerTrait
             // php will eat up your cpu if you don't have this
             usleep(10000);
         }
+
+        $this->log('All workers stopped', self::LOG_PROC_INFO);
     }
 
     /**
@@ -264,7 +265,7 @@ trait WorkerTrait
         $this->log("Stopping workers({$signals[$signal]}) ...", self::LOG_PROC_INFO);
 
         foreach ($this->workers as $pid => $worker) {
-            $this->log("Stopping worker (PID:$pid) (Jobs:" . implode(",", $worker['jobs']) . ")", self::LOG_PROC_INFO);
+            $this->log("Stopping worker #{$worker['id']}(PID:$pid)", self::LOG_PROC_INFO);
 
             // send exit signal.
             $this->killProcess($pid, $signal);

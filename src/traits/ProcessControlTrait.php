@@ -128,7 +128,7 @@ trait ProcessControlTrait
             pcntl_signal(SIGUSR2, [$this, 'signalHandler'], false);
             pcntl_signal(SIGHUP, [$this, 'signalHandler'], false);
         } else {
-            $this->log("Registering signal handlers for current worker process", self::LOG_DEBUG);
+            $this->log("Registering signal handlers for current process", self::LOG_DEBUG);
 
             if (!pcntl_signal(SIGTERM, [$this, 'signalHandler'], false)) {
                 $this->quit(-170);
@@ -138,11 +138,12 @@ trait ProcessControlTrait
 
     /**
      * dispatchSignal
+     * @return bool
      */
     protected function dispatchSignal()
     {
         // receive and dispatch sig
-        pcntl_signal_dispatch();
+        return pcntl_signal_dispatch();
     }
 
     /**
@@ -155,39 +156,42 @@ trait ProcessControlTrait
             static $stopCount = 0;
 
             switch ($sigNo) {
-                case SIGINT: // Ctrl + C
-                case SIGTERM:
+                case SIGINT: // 2 Ctrl + C
+                case SIGTERM: // 15
                     $sigText = $sigNo === SIGINT ? 'SIGINT(Ctrl+C)' : 'SIGTERM';
-                    $this->log("Shutting down($sigText)...", self::LOG_PROC_INFO);
+                    $this->log("Shutting down($sigNo:$sigText)...", self::LOG_PROC_INFO);
                     $this->stopWork();
                     $stopCount++;
 
                     if ($stopCount < 5) {
                         $this->stopWorkers();
                     } else {
-                        $this->log("Stop workers failed by($sigText), will force kill workers by(SIGKILL)", self::LOG_PROC_INFO);
+                        $this->log("Stop workers failed by($sigNo:$sigText), will force kill workers by(SIGKILL)", self::LOG_PROC_INFO);
                         $this->stopWorkers(SIGKILL);
                     }
                     break;
-                case SIGHUP:
-                    $this->log('Restarting workers(SIGHUP)', self::LOG_PROC_INFO);
+                case SIGHUP: // 1 reload workers
+                    $this->log("Restarting workers($sigNo:SIGHUP)", self::LOG_PROC_INFO);
                     $this->openLogFile();
                     $this->stopWorkers();
                     break;
-                case SIGUSR1: // reload workers and reload handlers
-                    $this->log('Reloading workers and handlers(SIGUSR1)', self::LOG_PROC_INFO);
+                case SIGUSR1: // 10 reload workers and reload handlers
+                    $this->log("Reloading workers and handlers($sigNo:SIGUSR1)", self::LOG_PROC_INFO);
                     $this->stopWork();
+                    $this->stopWorkers();
                     $this->start();
                     break;
-                case SIGUSR2:
+                case SIGUSR2: // 12
                     break;
                 default:
                     // handle all other signals
             }
 
         } else {
-            $this->stopWork();
-            $this->log("Received 'stopWork' signal(SIGTERM), will be exiting.", self::LOG_PROC_INFO);
+            if ($sigNo === SIGTERM) {
+                $this->stopWork();
+                $this->log("Received signal($sigNo:SIGTERM), will be exiting.", self::LOG_PROC_INFO);
+            }
         }
     }
 

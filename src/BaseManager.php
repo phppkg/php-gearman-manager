@@ -508,7 +508,7 @@ abstract class BaseManager implements ManagerInterface
         // prepare something for start
         $this->prepare();
 
-        $this->log("Started manager with pid {$this->pid}, Current script owner: " . get_current_user(), self::LOG_PROC_INFO);
+        $this->log("Started manager with PID {$this->pid}, Current script owner: " . get_current_user(), self::LOG_PROC_INFO);
 
         // Register signal listeners
         $this->registerSignals();
@@ -547,7 +547,6 @@ abstract class BaseManager implements ManagerInterface
             $this->logFileHandle = null;
         }
 
-        $this->log('All workers stopped', self::LOG_PROC_INFO);
         $this->log("Manager stopped\n", self::LOG_PROC_INFO);
 
         $this->quit();
@@ -846,11 +845,9 @@ EOF;
     protected function dumpInfo($allInfo = false)
     {
         if ($allInfo) {
-            $this->stdout("There are all information of the manager:");
-            Helper::printR($this);
+            $this->stdout("There are all information of the manager:\n" . Helper::printR($this));
         } else {
-            $this->stdout("There are configure information:");
-            Helper::printR($this->config);
+            $this->stdout("There are configure information:\n" . Helper::printR($this->config));
         }
 
         $this->quit();

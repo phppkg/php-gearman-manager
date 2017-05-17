@@ -114,6 +114,7 @@ class Manager extends LiteManager
                 $this->masterPid = $this->pid;
                 $this->pid = getmypid();
 
+                $this->registerSignals(false);
                 $this->validateDriverWorkers();
                 $this->startWatchModify();
                 break;
@@ -122,7 +123,7 @@ class Manager extends LiteManager
                 $this->stopWork();
                 break;
             default: // at parent
-                $this->log("Helper process started with PID:$pid", self::LOG_PROC_INFO);
+                $this->log("Started helper process with PID $pid", self::LOG_PROC_INFO);
                 $this->helperPid = $pid;
 
                 while ($this->waitForSignal && !$this->stopWork) {
@@ -191,22 +192,25 @@ class Manager extends LiteManager
             $lastCheckTime = 0;
             $checkInterval = $this->config['watch_modify_interval'];
 
-            $this->log("Running loop to watch modify(interval:{$checkInterval}s) for 'loader_file': $loaderFile", self::LOG_DEBUG);
+            $this->log("Running loop to watch modify(interval:{$checkInterval}s) for loader_file: $loaderFile", self::LOG_DEBUG);
 
             while (!$this->stopWork) {
                 $this->dispatchSignal();
+
+                if ($this->stopWork) {
+                    break;
+                }
 
                 // $maxTime = 0;
                 $mdfTime = filemtime($loaderFile);
                 // $maxTime = max($maxTime, $mdfTime);
 
-                $this->log("'loader_file': {$loaderFile} - MODIFY TIME: $mdfTime,LAST CHECK TIME: $lastCheckTime", self::LOG_DEBUG);
+                $this->log("loader_file: {$loaderFile} - MODIFY TIME: $mdfTime,LAST CHECK TIME: $lastCheckTime", self::LOG_DEBUG);
 
                 if ($lastCheckTime && $mdfTime > $lastCheckTime) {
                     clearstatcache();
                     $this->log("New code modify found. Sending SIGHUP(reload) to master(PID:{$this->masterPid})", self::LOG_PROC_INFO);
                     $this->sendSignal($this->masterPid, SIGHUP);
-                    break;
                 }
 
                 $lastCheckTime = time();
@@ -214,8 +218,7 @@ class Manager extends LiteManager
             }
         }
 
-        $this->log('Helper stopping', self::LOG_PROC_INFO);
-
+        $this->log('Helper stopped', self::LOG_PROC_INFO);
         $this->quit();
     }
 
@@ -235,10 +238,9 @@ class Manager extends LiteManager
     protected function stopHelper()
     {
         if ($pid = $this->helperPid) {
-            $this->log("Stopping helper(PID:$pid) ...", self::LOG_PROC_INFO);
-
             $this->helperPid = 0;
-            $this->killProcess($pid, SIGKILL);
+            $this->log("Stopping helper(PID:$pid) ...", self::LOG_PROC_INFO);
+            $this->killProcess($pid);
         }
     }
 
