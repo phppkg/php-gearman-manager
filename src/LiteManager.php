@@ -63,7 +63,7 @@ class LiteManager extends BaseManager
             $this->dispatchSignal();
 
             if (
-                @$gmWorker->work() ||
+                $gmWorker->work() ||
                 $gmWorker->returnCode() === GEARMAN_IO_WAIT ||  // code: 1
                 $gmWorker->returnCode() === GEARMAN_NO_JOBS     // code: 35
             ) {
@@ -76,8 +76,8 @@ class LiteManager extends BaseManager
                     if ($this->stopWork) {
                         break;
                     }
-                    $this->log('No received anything job.(sleep 5s)', self::LOG_CRAZY);
-                    sleep(5);
+                    $this->log('No received anything job.(sleep 3s)', self::LOG_CRAZY);
+                    sleep(3);
                     continue;
                 }
 
@@ -88,8 +88,8 @@ class LiteManager extends BaseManager
                         if ($this->stopWork) {
                             break;
                         }
-                        $this->log('We are not connected to any servers, so wait a bit before trying to reconnect.(sleep 5s)', self::LOG_CRAZY);
-                        sleep(5);
+                        $this->log('We are not connected to any servers, so wait a bit before trying to reconnect.(sleep 3s)', self::LOG_CRAZY);
+                        sleep(3);
                         continue;
                     }
 

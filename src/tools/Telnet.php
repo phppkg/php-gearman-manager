@@ -8,6 +8,10 @@
 
 namespace inhere\gearman\tools;
 
+/**
+ * Class Telnet
+ * @package inhere\gearman\tools
+ */
 class Telnet
 {
     const DRIVER_SOCKET = 'socket';
@@ -77,6 +81,9 @@ class Telnet
         $this->connect($this->host, $this->port);
     }
 
+    /**
+     * init
+     */
     protected function init()
     {
         $driver = $this->config['driver'];
@@ -277,6 +284,9 @@ class Telnet
         }
     }
 
+    /**
+     * close
+     */
     public function close()
     {
         if ($this->sock) {
@@ -316,6 +326,9 @@ class Telnet
         }
     }
 
+    /**
+     * __destruct
+     */
     public function __destruct()
     {
         $this->close();

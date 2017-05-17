@@ -8,7 +8,7 @@
 
 namespace inhere\gearman;
 
-use GearmanWorker;
+use inhere\gearman\tools\Telnet;
 
 /**
  * Class Manager - gearman worker manager
@@ -115,7 +115,7 @@ class Manager extends LiteManager
                 $this->pid = getmypid();
 
                 $this->registerSignals(false);
-                $this->validateDriverWorkers();
+                $this->validateJobServers();
                 $this->startWatchModify();
                 break;
             case -1:
@@ -134,7 +134,7 @@ class Manager extends LiteManager
 
                     if (self::CODE_CONNECT_ERROR === $exitCode) {
                         $servers = $this->getServers(false);
-                        $this->log("Error validating job servers, please check server address.(job servers: $servers)");
+                        $this->log("Error validating job servers, please check server address.(job servers=$servers)");
                         $this->quit($exitCode);
                     } elseif (self::CODE_NORMAL_EXITED !== $exitCode) {
                         $this->log("Helper process exited with non-zero exit code [$exitCode].");
@@ -148,34 +148,31 @@ class Manager extends LiteManager
     }
 
     /**
-     * Validates the PECL compatible worker files/functions
+     * Validates the job servers status
      */
-    protected function validateDriverWorkers()
+    protected function validateJobServers()
     {
-        $gmWorker = new GearmanWorker();
-        $gmWorker->setTimeout(5000);
-
         foreach ($this->getServers() as $s) {
-            $this->log("Testing adding server: $s", self::LOG_WORKER_INFO);
+            $result = '';
+            $this->log("Testing job server $s", self::LOG_DEBUG);
 
-            // see: https://bugs.php.net/bug.php?id=63041
             try {
-                $gmWorker->addServers($s);
-            } catch (\GearmanException $e) {
-                if ($e->getMessage() !== 'Failed to set exception option') {
-                    $this->stopWork();
-                    throw $e;
-                }
+                list($h, $p) = strpos($s, ':') ? explode(':', $s) : [$s, 4730];
+                $telnet = new Telnet($h, $p);
+                $result = $telnet->command('status');
+                $telnet->close();
+            } catch (\Exception $e) {
+                $this->log('Exception: ' . $e->getMessage(), self::LOG_ERROR);
+                $this->stopWork();
+                $this->quit(self::CODE_CONNECT_ERROR);
             }
 
-            if (!$gmWorker->echo('test_server') && $gmWorker->returnCode() === GEARMAN_COULD_NOT_CONNECT) {
-                $this->log("Failed connect to the server: $s", self::LOG_ERROR);
+            if (0 === strpos($result, 'ERR')) {
+                $this->log("Failed to get status: $s, result: $result", self::LOG_ERROR);
                 $this->stopWork();
                 $this->quit(self::CODE_CONNECT_ERROR);
             }
         }
-
-        unset($gmWorker);
 
         // Since we got here, all must be ok, send a CONTINUE
         $this->log("Server address verify success. Sending SIGCONT(continue) to master(PID:{$this->masterPid}).", self::LOG_PROC_INFO);
