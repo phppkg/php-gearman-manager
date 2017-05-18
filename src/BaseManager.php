@@ -157,6 +157,7 @@ abstract class BaseManager implements ManagerInterface
 
         // handlers load file
         'loader_file' => '',
+        'enable_pipe' => true,
 
         // user and group
         'user' => '',
@@ -180,8 +181,8 @@ abstract class BaseManager implements ManagerInterface
         // the master process pid save file
         'pid_file' => 'gwm.pid',
 
-        // will record manager meta data to file
-        'meta_file' => 'meta.dat',
+        // will record manager stat data to file
+        'stat_file' => 'stat.dat',
 
         // job handle default timeout seconds
         'timeout' => 300,
@@ -470,7 +471,7 @@ abstract class BaseManager implements ManagerInterface
 
         // init properties
 
-        $this->name = trim($config['name']);
+        $this->name = trim($config['name']) ?: substr(md5(microtime()), 0, 7);
         $this->doAllWorkerNum = $this->config['worker_num'];
         $this->maxLifetime = $this->config['max_lifetime'];
         $this->verbose = $this->config['log_level'];
@@ -530,6 +531,7 @@ abstract class BaseManager implements ManagerInterface
      */
     protected function beforeStartWorkers()
     {
+        // $this->createPipe();
     }
 
     /**

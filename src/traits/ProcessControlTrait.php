@@ -195,6 +195,24 @@ trait ProcessControlTrait
         }
     }
 
+    protected function createPipe()
+    {
+        if (!$this->config['enablePipe']) {
+            return false;
+        }
+
+        //创建管道
+        $pipeFile = "/tmp/{$this->name}.pipe";
+
+        if(!file_exists($pipeFile) && !posix_mkfifo($pipeFile, 0666)){
+            $this->stderr("Creat the pipe failed! PATH: $pipeFile");
+        }
+
+        $this->pipeHandle = fopen($pipeFile, 'wr');
+        stream_set_blocking($this->pipeHandle, false);  //设置成读取非阻塞
+
+        return true;
+    }
 
     /**
      * kill process by PID

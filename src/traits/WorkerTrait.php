@@ -44,6 +44,51 @@ trait WorkerTrait
     protected $jobExecCount = 0;
 
     /**
+     * pipeHandle
+     * @var resource
+     */
+    protected $pipeHandle;
+
+    protected function pipeMessage($workerId, $message)
+    {
+        if (!$this->pipeHandle) {
+            return false;
+        }
+
+        // 父进程读写管道
+        $string = fread($this->pipeHandle, 1024);
+        $json = json_decode($string);
+        $cmd = $json->command;
+
+        if ($cmd === 'status') {
+            fwrite($this->pipeHandle, json_encode([
+                'status' => 0,
+                'data' => 'received data: ' . json_encode($json->data),
+            ]));
+        }
+    }
+
+    protected function sendMessage($command, $message, $readResult = true)
+    {
+        if (!$this->pipeHandle) {
+            return false;
+        }
+        // $pid = $this->masterPid;
+
+        // 子进程读写管道
+        $len = fwrite($this->pipeHandle, json_encode([
+            'command' => $command,
+            'data' => $message,
+        ]));
+
+        if ($len && $readResult) {
+            return fread($this->pipeHandle, 1024);
+        }
+
+        return $len;
+    }
+
+    /**
      * Bootstrap a set of workers and any vars that need to be set
      */
     protected function startWorkers()

@@ -164,9 +164,16 @@ class CurlHelper
         $curlOptions[CURLOPT_RETURNTRANSFER] = true;
         //设置超时
         $curlOptions[CURLOPT_TIMEOUT] = $this->config['timeout'];
+        $curlOptions[CURLOPT_CONNECTTIMEOUT] = $this->config['timeout'];
+
+        $curlOptions[CURLOPT_ENCODING] = ''; // gzip
+
+        $curlOptions[CURLOPT_FOLLOWLOCATION] = true;
+        $curlOptions[CURLOPT_MAXREDIRS] = 5;
 
         // headers
         $headers[] = 'Expect: '; // 首次速度非常慢 解决
+        $headers[] = 'Accept-Encoding: gzip, deflate'; // gzip
         $curlOptions[CURLOPT_HTTPHEADER] = $headers;
 
         // 如果有配置代理这里就设置代理

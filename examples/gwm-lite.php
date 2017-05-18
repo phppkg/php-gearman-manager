@@ -23,6 +23,8 @@ $config = [
     'daemon' => false,
     'pid_file' => __DIR__ . '/lite-manager.pid',
 
+    'stat_file' => __DIR__ . '/logs/lite-stat.dat',
+
     'log_level' => LiteManager::LOG_DEBUG,
     'log_file' => __DIR__ . '/logs/lite-manager.log',
 ];

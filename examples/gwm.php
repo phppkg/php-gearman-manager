@@ -26,6 +26,7 @@ $config = [
     'log_level' => Manager::LOG_DEBUG,
     'log_file' => __DIR__ . '/logs/manager.log',
 
+    'stat_file' => __DIR__ . '/logs/stat.dat',
     'loader_file' => __DIR__ . '/job_handlers.php',
 ];
 
