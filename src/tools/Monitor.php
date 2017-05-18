@@ -6,11 +6,11 @@
  * Time: 下午8:51
  */
 
-namespace inhere\gearman\monitor;
+namespace inhere\gearman\tools;
 
 /**
  * Class Monitor
- * @package inhere\gearman\monitor
+ * @package inhere\gearman\tools
  */
 class Monitor
 {
@@ -18,15 +18,23 @@ class Monitor
      * Server list
      *
      * @var array
+     *
+     * [
+     *     'index' => [
+     *         'name' => 'default',
+     *         'address' => '1270.0.1:4730'
+     *     ],
+     *     ... ...
+     * ]
      */
-    protected $_servers = array();
+    protected $_servers = [];
 
     /**
      * Filter: server IDs
      *
      * @var array
      */
-    protected $_filterServers = array();
+    protected $_filterServers = [];
 
     /**
      * Filter: server name substring
@@ -54,7 +62,7 @@ class Monitor
      *
      * @var array
      */
-    protected $_errors = array();
+    protected $_errors = [];
 
     const SORT_SERVER = 'server';
     const SORT_NAME = 'name';
@@ -77,7 +85,7 @@ class Monitor
      *
      * @param array $options
      */
-    public function __construct(array $options = array())
+    public function __construct(array $options = [])
     {
         $this->setOptions($options);
     }
@@ -113,7 +121,7 @@ class Monitor
      */
     public function clearServers()
     {
-        $this->_servers = array();
+        $this->_servers = [];
 
         return $this;
     }
@@ -121,13 +129,13 @@ class Monitor
     /**
      * Add a server to the list
      *
-     * @param int $serverIndex
+     * @param int $index
      * @param array $serverValues
      * @return self
      */
-    public function addServer($serverIndex, $serverValues)
+    public function addServer($index, $serverValues)
     {
-        $this->_servers[$serverIndex] = (array)$serverValues;
+        $this->_servers[$index] = (array)$serverValues;
 
         return $this;
     }
@@ -203,23 +211,23 @@ class Monitor
      */
     public function getVersionData()
     {
-        $data = array();
+        $data = [];
 
-        foreach ($this->_servers as $serverIndex => $server) {
-            if (!empty($this->_filterServers) && !in_array($serverIndex, $this->_filterServers)) {
+        foreach ($this->_servers as $index => $server) {
+            if (!empty($this->_filterServers) && !in_array($index, $this->_filterServers)) {
                 continue;
             }
 
             try {
-                $gearmanManager = new \GearmanWorker($server['address']);
+                $gmd = new TelnetGmdServer($server['address']);
 
-                $data[$serverIndex] = array(
-                    'version' => $gearmanManager->version(),
+                $data[$index] = array(
+                    'version' => $gmd->version(),
                     'address' => $server['address']
                 );
 
-                $gearmanManager->disconnect();
-                unset($gearmanManager);
+                $gmd->close();
+                unset($gmd);
             } catch (\Exception $e) {
                 $this->_addError($e->getMessage());
             }
@@ -235,42 +243,38 @@ class Monitor
      */
     public function getFunctionData()
     {
-        $data = array();
         $i = 0;
-        $groupDataTmp = array();
+        $data = $groupDataTmp = [];
 
-        foreach ($this->_servers as $serverIndex => $server) {
-            if (!empty($this->_filterServers) && !in_array($serverIndex, $this->_filterServers)) {
+        foreach ($this->_servers as $index => $server) {
+            if ($this->_filterServers && !in_array($index, $this->_filterServers)) {
                 continue;
             }
 
             try {
-                $gearmanManager = new Net_Gearman_Manager($server['address']);
+                $gmd = new TelnetGmdServer($server['address']);
+                $status = $gmd->statusInfo();
+                $gmd->close();
+                unset($gmd);
 
-                $status = $gearmanManager->status();
+                foreach ($status as $row) {
+                    if (strlen($this->_filterName) == 0 || stripos($row['job_name'], $this->_filterName) !== false) {
+                        $row['name'] = $this->_groupby === self::GROUP_SERVER ? '+' : $row['job_name'];
+                        $row['server'] = $this->_groupby === self::GROUP_NAME ? '+' : $server['name'];
 
-                $gearmanManager->disconnect();
-                unset($gearmanManager);
-
-                foreach ($status as $workerName => $workerStatus) {
-                    if (strlen($this->_filterName) == 0 || stripos($workerName, $this->_filterName) !== false) {
-                        $workerStatus['name'] = ($this->_groupby == self::GROUP_SERVER) ? '+' : $workerName;
-                        $workerStatus['server'] = ($this->_groupby == self::GROUP_NAME) ? '+' : $server['name'];
-
-                        if ($this->_groupby != self::GROUP_NONE) {
-                            if (isset($groupDataTmp[$workerStatus[$this->_groupby]])) {
-                                $k = $groupDataTmp[$workerStatus[$this->_groupby]];
+                        if ($this->_groupby !== self::GROUP_NONE) {
+                            if (isset($groupDataTmp[$row[$this->_groupby]])) {
+                                $k = $groupDataTmp[$row[$this->_groupby]];
                                 foreach (array('in_queue', 'jobs_running', 'capable_workers') as $key) {
-                                    $data[$k][$key] += $workerStatus[$key];
+                                    $data[$k][$key] += $row[$key];
                                 }
                             } else {
-                                $groupDataTmp[$workerStatus[$this->_groupby]] = $i;
-
-                                $data[] = $workerStatus;
+                                $groupDataTmp[$row[$this->_groupby]] = $i;
+                                $data[] = $row;
                                 $i++;
                             }
                         } else {
-                            $data[] = $workerStatus;
+                            $data[] = $row;
                             $i++;
                         }
                     }
@@ -292,27 +296,26 @@ class Monitor
      */
     public function getWorkersData()
     {
-        $data = array();
+        $data = [];
 
-        foreach ($this->_servers as $serverIndex => $server) {
-            if (!empty($this->_filterServers) && !in_array($serverIndex, $this->_filterServers)) {
+        foreach ($this->_servers as $index => $server) {
+            if ($this->_filterServers && !in_array($index, $this->_filterServers)) {
                 continue;
             }
 
             try {
-                $gearmanManager = new Net_Gearman_Manager($server['address']);
-
-                $workers = $gearmanManager->workers();
-
-                $gearmanManager->disconnect();
-                unset($gearmanManager);
+                $gmd = new TelnetGmdServer($server['address']);
+                $workers = $gmd->workersInfo();
+                $gmd->close();
+                unset($gmd);
 
                 foreach ($workers as $worker) {
-                    if (strlen($this->_filterName) == 0 ||
+                    if (
+                        strlen($this->_filterName) == 0 ||
                         stripos($worker['ip'], $this->_filterName) !== false ||
-                        stripos(join('$#!', $worker['abilities']), $this->_filterName) !== false
+                        stripos(explode('$#!', $worker['jobNames']), $this->_filterName) !== false
                     ) {
-                        sort($worker['abilities'], SORT_STRING);
+                        sort($worker['jobNames'], SORT_STRING);
                         $worker['server'] = $server['name'];
                         $data[] = $worker;
                     }
@@ -334,13 +337,13 @@ class Monitor
      */
     protected function _getSortAvailableFunctions()
     {
-        return array(
+        return [
             self::SORT_SERVER,
             self::SORT_NAME,
             self::SORT_JOBS_IN_QUEUE,
             self::SORT_JOBS_RUNNING,
             self::SORT_WORKERS
-        );
+        ];
     }
 
     /**
@@ -350,20 +353,20 @@ class Monitor
      */
     protected function _getSortAvailableWorkers()
     {
-        return array(
+        return [
             self::SORT_SERVER,
             self::SORT_IP,
             self::SORT_FD,
             self::SORT_ID
-        );
+        ];
     }
 
     protected function _getGroupAvailableFunctions()
     {
-        return array(
+        return [
             self::GROUP_SERVER,
             self::GROUP_NAME
-        );
+        ];
     }
 
     /**
@@ -375,7 +378,7 @@ class Monitor
     protected function _sortData(array $data, $colsAvailable)
     {
         if (in_array($this->_sort, $colsAvailable)) {
-            $sortCol = array();
+            $sortCol = [];
 
             foreach ($data as $key => $values) {
                 $sortCol[$key] = $values[$this->_sort];

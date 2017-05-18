@@ -71,13 +71,15 @@ class Telnet
      */
     public function __construct($host = '127.0.0.1', $port = 80, array $config = [])
     {
+        if (strpos($host, ':')) {
+            list($host, $port) = explode(':', $host);
+        }
+
         $this->host = $host ?: '127.0.0.1';
         $this->port = $port ?: 80;
 
         $this->setConfig($config);
-
         $this->init();
-
         $this->connect($this->host, $this->port);
     }
 
