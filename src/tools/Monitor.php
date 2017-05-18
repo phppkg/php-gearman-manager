@@ -112,6 +112,10 @@ class Monitor
         if (isset($options['groupby']) && in_array($options['groupby'], $this->_getGroupAvailableFunctions())) {
             $this->_groupby = (string)$options['groupby'];
         }
+
+        if (isset($options['servers'])) {
+            $this->addServers($options['servers']);
+        }
     }
 
     /**

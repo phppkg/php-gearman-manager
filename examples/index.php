@@ -4,9 +4,24 @@ error_reporting(E_ALL | E_STRICT);
 date_default_timezone_set('Asia/Shanghai');
 require __DIR__ . '/simple-autoloader.php';
 
-$host = '192.168.101.2';
-$port = 4730;
-$tt = new \inhere\gearman\tools\TelnetGmdServer($host, $port);
+//$monitor = new \inhere\gearman\tools\Monitor([
+//    'servers' => [
+//        [
+//            'name' => 'default',
+//            'address' => '127.0.0.1:4730',
+//        ]
+//    ]
+//]);
 
-print_r($tt->statusInfo());
-print_r($tt->workersInfo());
+//print_r($monitor->getFunctionData());
+
+function render_view($view, array $data)
+{
+    extract($data);
+
+    require $view;
+}
+
+render_view(__DIR__ . '/views/monitor.html', [
+//    'sInfo' => $monitor->getFunctionData(),
+]);
