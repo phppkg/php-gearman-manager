@@ -23,17 +23,16 @@ $monitor = new Monitor([
 $statusInfo = json_encode($monitor->getFunctionData());
 $workersInfo = json_encode($monitor->getWorkersData());
 
+
+render_view(__DIR__ . '/views/monitor.html', [
+   'servers' => json_encode($monitor->getServersData()),
+   'statusInfo' => $statusInfo,
+   'workersInfo' => $workersInfo,
+]);
+
 function render_view($view, array $data)
 {
     extract($data);
 
     require $view;
 }
-
-render_view(__DIR__ . '/views/monitor.html', [
-   'servers' => json_encode($monitor->getServersData()),
-   // 'statusFileds' => TelnetGmdServer::STATUS_FIELDS,
-   'statusInfo' => $statusInfo,
-   // 'workersFileds' => TelnetGmdServer::WORKERS_FIELDS,
-   'workersInfo' => $workersInfo,
-]);
