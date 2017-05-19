@@ -24,6 +24,7 @@ namespace inhere\gearman\tools;
  *
  * @package inhere\gearman\tools
  *
+ * @method static debug($msg, array $data = [], $filename = 'default.log')
  * @method static info($msg, array $data = [], $filename = 'default.log')
  * @method static notice($msg, array $data = [], $filename = 'default.log')
  * @method static warning($msg, array $data = [], $filename = 'default.log')
@@ -46,7 +47,7 @@ class FileLogger
     /**
      * @var array
      */
-    protected static $allow = ['info', 'notice', 'warning', 'error'];
+    protected static $allow = ['debug', 'info', 'notice', 'warning', 'error'];
 
     /**
      * @param string $basePath

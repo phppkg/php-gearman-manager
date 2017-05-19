@@ -22,7 +22,7 @@ use inhere\gearman\tools\CurlHelper;
  * ```php
  * class UserAfterRegisterJob extends RequestProxyJob
  * {
- *   protected function dataValidate(array &$payload)
+ *   protected function beforeSend(array &$payload)
  *   {
  *       if (!isset($payload['userId']) || $payload['userId'] <= 0) {
  *           return false;
@@ -62,7 +62,7 @@ abstract class RequestProxyJob extends UseLogJob
      * @param array $payload
      * @return bool
      */
-    abstract protected function dataValidate(array &$payload);
+    abstract protected function beforeSend(array &$payload);
     // {
     //      if (!isset($payload['userId']) || $payload['userId'] <= 0) {
     //          return false;
@@ -86,7 +86,7 @@ abstract class RequestProxyJob extends UseLogJob
 
         $payload = json_decode($workload, true);
 
-        if (!$this->dataValidate($payload)) {
+        if (!$this->beforeSend($payload)) {
             $this->err("data validate failed, workload=$workload");
             return false;
         }
@@ -95,12 +95,13 @@ abstract class RequestProxyJob extends UseLogJob
         $baseUrl = $this->baseUrl;
         $path = $this->path;
 
-        $this->info("request method=$method host=$baseUrl path=$path data=$workload");
+        $this->info("Request method=$method host=$baseUrl path=$path data=$workload");
 
-        $ret = CurlHelper::make()->setBaseUrl($baseUrl)->$method($path, $payload);
-        $ary = json_decode($ret, true);
+        $curl = new CurlHelper();
+        $ret = $curl->setBaseUrl($baseUrl)->$method($path, $payload);
+        // $ary = json_decode($ret, true);
 
-        if ($ary && (int)$ary['status'] === 0) {
+        if ($curl->isOk()) {
             $this->info("Successful for the job, remote return=$ret");
 
             return true;

@@ -36,6 +36,15 @@ abstract class UseLogJob extends Job
      * @param $msg
      * @param array $data
      */
+    protected function debug($msg, array $data = [])
+    {
+        FileLogger::debug("id={$this->id} " . $msg, $data, $this->name);
+    }
+
+    /**
+     * @param $msg
+     * @param array $data
+     */
     protected function info($msg, array $data = [])
     {
         FileLogger::info("id={$this->id} " . $msg, $data, $this->name);

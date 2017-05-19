@@ -3,7 +3,7 @@
   "type": "library",
   "description": "a php gearman workers manager tool library",
   "keywords": ["library", "gearman", "worker", "manager"],
-  "homepage": "http://github.com/inhere/php-librarys",
+  "homepage": "http://github.com/inhere/php-gearman-manager",
   "license": "MIT",
   "authors": [
     {

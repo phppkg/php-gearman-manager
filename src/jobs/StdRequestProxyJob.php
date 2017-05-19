@@ -36,7 +36,7 @@ class StdRequestProxyJob extends RequestProxyJob
      * @param array $payload
      * @return bool
      */
-    protected function dataValidate(array &$payload)
+    protected function beforeSend(array &$payload)
     {
         if (!isset($payload['_uri']) || $payload['_uri']) {
             return false;

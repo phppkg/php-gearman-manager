@@ -1,0 +1,986 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>@font-face {
+  font-family: octicons-anchor;
+  src: url(data:font/woff;charset=utf-8;base64,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) format('woff');
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    width: 980px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+body .markdown-body {
+    padding: 45px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    word-wrap: break-word;
+}
+
+pre {
+    font: 12px Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+
+.markdown-body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  color: #333;
+  font-family: "Helvetica Neue", Helvetica, "Segoe UI", Arial, freesans, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-size: 16px;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+.markdown-body a {
+  background-color: transparent;
+}
+
+.markdown-body a:active,
+.markdown-body a:hover {
+  outline: 0;
+}
+
+.markdown-body strong {
+  font-weight: bold;
+}
+
+.markdown-body h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+}
+
+.markdown-body img {
+  border: 0;
+}
+
+.markdown-body hr {
+  box-sizing: content-box;
+  height: 0;
+}
+
+.markdown-body pre {
+  overflow: auto;
+}
+
+.markdown-body code,
+.markdown-body kbd,
+.markdown-body pre {
+  font-family: monospace, monospace;
+  font-size: 1em;
+}
+
+.markdown-body input {
+  color: inherit;
+  font: inherit;
+  margin: 0;
+}
+
+.markdown-body html input[disabled] {
+  cursor: default;
+}
+
+.markdown-body input {
+  line-height: normal;
+}
+
+.markdown-body input[type="checkbox"] {
+  box-sizing: border-box;
+  padding: 0;
+}
+
+.markdown-body table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.markdown-body td,
+.markdown-body th {
+  padding: 0;
+}
+
+.markdown-body input {
+  font: 13px / 1.4 Helvetica, arial, nimbussansl, liberationsans, freesans, clean, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+.markdown-body a {
+  color: #4078c0;
+  text-decoration: none;
+}
+
+.markdown-body a:hover,
+.markdown-body a:active {
+  text-decoration: underline;
+}
+
+.markdown-body hr {
+  height: 0;
+  margin: 15px 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.markdown-body hr:before {
+  display: table;
+  content: "";
+}
+
+.markdown-body hr:after {
+  display: table;
+  clear: both;
+  content: "";
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin-top: 15px;
+  margin-bottom: 15px;
+  line-height: 1.1;
+}
+
+.markdown-body h1 {
+  font-size: 30px;
+}
+
+.markdown-body h2 {
+  font-size: 21px;
+}
+
+.markdown-body h3 {
+  font-size: 16px;
+}
+
+.markdown-body h4 {
+  font-size: 14px;
+}
+
+.markdown-body h5 {
+  font-size: 12px;
+}
+
+.markdown-body h6 {
+  font-size: 11px;
+}
+
+.markdown-body blockquote {
+  margin: 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-body ol ol,
+.markdown-body ul ol {
+  list-style-type: lower-roman;
+}
+
+.markdown-body ul ul ol,
+.markdown-body ul ol ol,
+.markdown-body ol ul ol,
+.markdown-body ol ol ol {
+  list-style-type: lower-alpha;
+}
+
+.markdown-body dd {
+  margin-left: 0;
+}
+
+.markdown-body code {
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 12px;
+}
+
+.markdown-body pre {
+  margin-top: 0;
+  margin-bottom: 0;
+  font: 12px Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+
+.markdown-body .select::-ms-expand {
+  opacity: 0;
+}
+
+.markdown-body .octicon {
+  font: normal normal normal 16px/1 octicons-anchor;
+  display: inline-block;
+  text-decoration: none;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.markdown-body .octicon-link:before {
+  content: '\f05c';
+}
+
+.markdown-body:before {
+  display: table;
+  content: "";
+}
+
+.markdown-body:after {
+  display: table;
+  clear: both;
+  content: "";
+}
+
+.markdown-body>*:first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-body>*:last-child {
+  margin-bottom: 0 !important;
+}
+
+.markdown-body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.markdown-body .anchor {
+  display: inline-block;
+  padding-right: 2px;
+  margin-left: -18px;
+}
+
+.markdown-body .anchor:focus {
+  outline: none;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin-top: 1em;
+  margin-bottom: 16px;
+  font-weight: bold;
+  line-height: 1.4;
+}
+
+.markdown-body h1 .octicon-link,
+.markdown-body h2 .octicon-link,
+.markdown-body h3 .octicon-link,
+.markdown-body h4 .octicon-link,
+.markdown-body h5 .octicon-link,
+.markdown-body h6 .octicon-link {
+  color: #000;
+  vertical-align: middle;
+  visibility: hidden;
+}
+
+.markdown-body h1:hover .anchor,
+.markdown-body h2:hover .anchor,
+.markdown-body h3:hover .anchor,
+.markdown-body h4:hover .anchor,
+.markdown-body h5:hover .anchor,
+.markdown-body h6:hover .anchor {
+  text-decoration: none;
+}
+
+.markdown-body h1:hover .anchor .octicon-link,
+.markdown-body h2:hover .anchor .octicon-link,
+.markdown-body h3:hover .anchor .octicon-link,
+.markdown-body h4:hover .anchor .octicon-link,
+.markdown-body h5:hover .anchor .octicon-link,
+.markdown-body h6:hover .anchor .octicon-link {
+  visibility: visible;
+}
+
+.markdown-body h1 {
+  padding-bottom: 0.3em;
+  font-size: 2.25em;
+  line-height: 1.2;
+  border-bottom: 1px solid #eee;
+}
+
+.markdown-body h1 .anchor {
+  line-height: 1;
+}
+
+.markdown-body h2 {
+  padding-bottom: 0.3em;
+  font-size: 1.75em;
+  line-height: 1.225;
+  border-bottom: 1px solid #eee;
+}
+
+.markdown-body h2 .anchor {
+  line-height: 1;
+}
+
+.markdown-body h3 {
+  font-size: 1.5em;
+  line-height: 1.43;
+}
+
+.markdown-body h3 .anchor {
+  line-height: 1.2;
+}
+
+.markdown-body h4 {
+  font-size: 1.25em;
+}
+
+.markdown-body h4 .anchor {
+  line-height: 1.2;
+}
+
+.markdown-body h5 {
+  font-size: 1em;
+}
+
+.markdown-body h5 .anchor {
+  line-height: 1.1;
+}
+
+.markdown-body h6 {
+  font-size: 1em;
+  color: #777;
+}
+
+.markdown-body h6 .anchor {
+  line-height: 1.1;
+}
+
+.markdown-body p,
+.markdown-body blockquote,
+.markdown-body ul,
+.markdown-body ol,
+.markdown-body dl,
+.markdown-body table,
+.markdown-body pre {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.markdown-body hr {
+  height: 4px;
+  padding: 0;
+  margin: 16px 0;
+  background-color: #e7e7e7;
+  border: 0 none;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 2em;
+}
+
+.markdown-body ul ul,
+.markdown-body ul ol,
+.markdown-body ol ol,
+.markdown-body ol ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-body li>p {
+  margin-top: 16px;
+}
+
+.markdown-body dl {
+  padding: 0;
+}
+
+.markdown-body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: bold;
+}
+
+.markdown-body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+
+.markdown-body blockquote {
+  padding: 0 15px;
+  color: #777;
+  border-left: 4px solid #ddd;
+}
+
+.markdown-body blockquote>:first-child {
+  margin-top: 0;
+}
+
+.markdown-body blockquote>:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body table {
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+
+.markdown-body table th {
+  font-weight: bold;
+}
+
+.markdown-body table th,
+.markdown-body table td {
+  padding: 6px 13px;
+  border: 1px solid #ddd;
+}
+
+.markdown-body table tr {
+  background-color: #fff;
+  border-top: 1px solid #ccc;
+}
+
+.markdown-body table tr:nth-child(2n) {
+  background-color: #f8f8f8;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  box-sizing: content-box;
+  background-color: #fff;
+}
+
+.markdown-body code {
+  padding: 0;
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(0,0,0,0.04);
+  border-radius: 3px;
+}
+
+.markdown-body code:before,
+.markdown-body code:after {
+  letter-spacing: -0.2em;
+  content: "\00a0";
+}
+
+.markdown-body pre>code {
+  padding: 0;
+  margin: 0;
+  font-size: 100%;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+
+.markdown-body .highlight {
+  margin-bottom: 16px;
+}
+
+.markdown-body .highlight pre,
+.markdown-body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: #f7f7f7;
+  border-radius: 3px;
+}
+
+.markdown-body .highlight pre {
+  margin-bottom: 0;
+  word-break: normal;
+}
+
+.markdown-body pre {
+  word-wrap: normal;
+}
+
+.markdown-body pre code {
+  display: inline;
+  max-width: initial;
+  padding: 0;
+  margin: 0;
+  overflow: initial;
+  line-height: inherit;
+  word-wrap: normal;
+  background-color: transparent;
+  border: 0;
+}
+
+.markdown-body pre code:before,
+.markdown-body pre code:after {
+  content: normal;
+}
+
+.markdown-body kbd {
+  display: inline-block;
+  padding: 3px 5px;
+  font-size: 11px;
+  line-height: 10px;
+  color: #555;
+  vertical-align: middle;
+  background-color: #fcfcfc;
+  border: solid 1px #ccc;
+  border-bottom-color: #bbb;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 #bbb;
+}
+
+.markdown-body .pl-c {
+  color: #969896;
+}
+
+.markdown-body .pl-c1,
+.markdown-body .pl-s .pl-v {
+  color: #0086b3;
+}
+
+.markdown-body .pl-e,
+.markdown-body .pl-en {
+  color: #795da3;
+}
+
+.markdown-body .pl-s .pl-s1,
+.markdown-body .pl-smi {
+  color: #333;
+}
+
+.markdown-body .pl-ent {
+  color: #63a35c;
+}
+
+.markdown-body .pl-k {
+  color: #a71d5d;
+}
+
+.markdown-body .pl-pds,
+.markdown-body .pl-s,
+.markdown-body .pl-s .pl-pse .pl-s1,
+.markdown-body .pl-sr,
+.markdown-body .pl-sr .pl-cce,
+.markdown-body .pl-sr .pl-sra,
+.markdown-body .pl-sr .pl-sre {
+  color: #183691;
+}
+
+.markdown-body .pl-v {
+  color: #ed6a43;
+}
+
+.markdown-body .pl-id {
+  color: #b52a1d;
+}
+
+.markdown-body .pl-ii {
+  background-color: #b52a1d;
+  color: #f8f8f8;
+}
+
+.markdown-body .pl-sr .pl-cce {
+  color: #63a35c;
+  font-weight: bold;
+}
+
+.markdown-body .pl-ml {
+  color: #693a17;
+}
+
+.markdown-body .pl-mh,
+.markdown-body .pl-mh .pl-en,
+.markdown-body .pl-ms {
+  color: #1d3e81;
+  font-weight: bold;
+}
+
+.markdown-body .pl-mq {
+  color: #008080;
+}
+
+.markdown-body .pl-mi {
+  color: #333;
+  font-style: italic;
+}
+
+.markdown-body .pl-mb {
+  color: #333;
+  font-weight: bold;
+}
+
+.markdown-body .pl-md {
+  background-color: #ffecec;
+  color: #bd2c00;
+}
+
+.markdown-body .pl-mi1 {
+  background-color: #eaffea;
+  color: #55a532;
+}
+
+.markdown-body .pl-mdr {
+  color: #795da3;
+  font-weight: bold;
+}
+
+.markdown-body .pl-mo {
+  color: #1d3e81;
+}
+
+.markdown-body kbd {
+  display: inline-block;
+  padding: 3px 5px;
+  font: 11px Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  line-height: 10px;
+  color: #555;
+  vertical-align: middle;
+  background-color: #fcfcfc;
+  border: solid 1px #ccc;
+  border-bottom-color: #bbb;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 #bbb;
+}
+
+.markdown-body .plan-price-unit {
+  color: #767676;
+  font-weight: normal;
+}
+
+.markdown-body .task-list-item {
+  list-style-type: none;
+}
+
+.markdown-body .task-list-item+.task-list-item {
+  margin-top: 3px;
+}
+
+.markdown-body .task-list-item input {
+  margin: 0 0.35em 0.25em -1.6em;
+  vertical-align: middle;
+}
+
+.markdown-body .plan-choice {
+  padding: 15px;
+  padding-left: 40px;
+  display: block;
+  border: 1px solid #e0e0e0;
+  position: relative;
+  font-weight: normal;
+  background-color: #fafafa;
+}
+
+.markdown-body .plan-choice.open {
+  background-color: #fff;
+}
+
+.markdown-body .plan-choice.open .plan-choice-seat-breakdown {
+  display: block;
+}
+
+.markdown-body .plan-choice-free {
+  border-radius: 3px 3px 0 0;
+}
+
+.markdown-body .plan-choice-paid {
+  border-radius: 0 0 3px 3px;
+  border-top: 0;
+  margin-bottom: 20px;
+}
+
+.markdown-body .plan-choice-radio {
+  position: absolute;
+  left: 15px;
+  top: 18px;
+}
+
+.markdown-body .plan-choice-exp {
+  color: #999;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.markdown-body .plan-choice-seat-breakdown {
+  margin-top: 10px;
+  display: none;
+}
+
+.markdown-body :checked+.radio-label {
+  z-index: 1;
+  position: relative;
+  border-color: #4078c0;
+}
+</style><title>README_zh</title></head><body><article class="markdown-body"><h1>
+<a id="user-content-gearman-worker-manager" class="anchor" href="#gearman-worker-manager" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>gearman worker manager</h1>
+<p>php 的 gearman workers 管理工具。</p>
+<p>学习并参考自项目 <strong><a href="https://github.com/brianlmoon/GearmanManager">brianlmoon/GearmanManager</a></strong>,</p>
+<p>代码风格有点老了:)，并且是以一个文件些一个函数的方式添加job handler. 没有停止等命令。</p>
+<p>但是非常感谢这个项目，大部分逻辑思想都来自于它。</p>
+<p>功能特色:</p>
+<ul>
+<li>可同时启动并管理多个gearman worker，并会监控运行状态，worker异常退出会自动再重启一个对应的worker</li>
+<li>可以设置每个worker的最大执行时间(默认一小时左右)和最大job执行数量(默认3000个)，到达设定值后,会自动重启worker，防止进程僵死</li>
+<li>可以自定义worker数量，也可以针对job设置worker数量。还可以让worker专注指定的job。</li>
+<li>代码容易阅读和理解，写了较详细的注释:)</li>
+<li>支持 <code>start</code> <code>reload</code> <code>restart</code> <code>stop</code> <code>status</code> 命令，重启不会干扰job的完成(worker会等待当前job处理后退出). 支持守护进程方式运行</li>
+<li>详细的运行日志(启动、重启、停止、收到job...)，可以按天或小时存放日志. 可以自定义日志级别</li>
+<li>内置了几个有趣的job handler 基类，可以快速的上手。 <code>examples</code> 目录下的可以直接运行，当然得先安装好 gearmand server.</li>
+<li>内置了简单的 <code>curl</code> <code>telnet</code> <code>monitor</code> <code>logger</code> 等工具类</li>
+<li>内置了简单的 monitor 的web面板</li>
+</ul>
+<blockquote>
+<p>只支持 linux 环境， 需要php的 <code>pcntl</code> <code>posix</code> 扩展. macOs 应该也可以用，但没测试。
+php &gt;= 5.6 and &lt; 7.0.0(php的gearman扩展不支持7)</p>
+</blockquote>
+<h2>
+<a id="user-content-获取安装" class="anchor" href="#%E8%8E%B7%E5%8F%96%E5%AE%89%E8%A3%85" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>获取安装</h2>
+<ul>
+<li>composer:</li>
+</ul>
+<pre><code>"require": {
+    "inhere/gearman": "dev-master"
+},
+</code></pre>
+<ul>
+<li>github</li>
+</ul>
+<p>直接从github拉取<code>git clone http://github.com/inhere/php-gearman-manager</code></p>
+<h2>
+<a id="user-content-基本命令" class="anchor" href="#%E5%9F%BA%E6%9C%AC%E5%91%BD%E4%BB%A4" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>基本命令</h2>
+<ul>
+<li>启动</li>
+</ul>
+<div class="highlight highlight-source-shell"><pre>// 启动
+php examples/gwm.php 
+// 后台运行
+php examples/gwm.php -d
+php examples/gwm.php --daemon</pre></div>
+<ul>
+<li>停止</li>
+</ul>
+<div class="highlight highlight-source-shell"><pre>php examples/gwm.php stop</pre></div>
+<ul>
+<li>重启</li>
+</ul>
+<div class="highlight highlight-source-shell"><pre>php examples/gwm.php restart</pre></div>
+<ul>
+<li>其他</li>
+</ul>
+<div class="highlight highlight-source-shell"><pre>// 查看帮助信息 可看到更多的可用选项
+php examples/gwm.php --help
+
+// 打印manager配置信息
+php examples/gwm.php -D</pre></div>
+<h2>
+<a id="user-content-命令以及选项说明" class="anchor" href="#%E5%91%BD%E4%BB%A4%E4%BB%A5%E5%8F%8A%E9%80%89%E9%A1%B9%E8%AF%B4%E6%98%8E" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>命令以及选项说明</h2>
+<p>在命令行里使用 <code>php examples/gwm.php -h</code> 可以查看到所有的命令和选项信息</p>
+<blockquote>
+<p>命令行里设定的选项将会覆盖文件配置。</p>
+</blockquote>
+<pre><code>root@php5-dev:/var/www/phplang/library/gearman-manager# php examples/gwm.php -h
+Gearman worker manager(gwm) script tool. Version 0.1.0
+
+USAGE:
+  php examples/gwm.php {COMMAND} -c CONFIG [-v LEVEL] [-l LOG_FILE] [-d] [-w] [-p PID_FILE]
+  php examples/gwm.php -h
+  php examples/gwm.php -D
+
+COMMANDS:
+  start             Start gearman worker manager(default)
+  stop              Stop running's gearman worker manager
+  restart           Restart running's gearman worker manager
+  reload            Reload all running workers of the manager
+  status            Get gearman worker manager runtime status
+
+SPECIAL OPTIONS:
+  start/restart
+    -w,--watch         Automatically watch and reload when 'loader_file' has been modify(TODO)
+    -d,--daemon        Daemon, detach and run in the background
+       --jobs          Only register the assigned jobs, multi job name separated by commas(',') // 设定只加载这几个job handler，防止其他的job干扰。测试时很有用，
+       --no-test       Not add test handler, when job name prefix is 'test'.(eg: test_job) // 不加载以test为前缀的handler。如在生产环境时
+
+  status
+    --cmd COMMAND      Send command when connect to the job server. allow:status,workers.(default:status) // 查看job server的信息
+    --watch-status     Watch status command, will auto refresh status.
+
+PUBLIC OPTIONS:
+  -c CONFIG          Load a custom worker manager configuration file
+  -s HOST[:PORT]     Connect to server HOST and optional PORT, multi server separated by commas(',')
+
+  -n NUMBER          Start NUMBER workers that do all jobs
+
+  -u USERNAME        Run workers as USERNAME
+  -g GROUP_NAME      Run workers as user's GROUP NAME
+
+  -l LOG_FILE        Log output to LOG_FILE or use keyword 'syslog' for syslog support
+  -p PID_FILE        File to write master process ID out to
+
+  -r NUMBER          Maximum run job iterations per worker // 启动多少个worker来做job。这些worker是随机接收并处理job。如需对某个job特殊处理，需单独配置它
+  -x SECONDS         Maximum seconds for a worker to live
+  -t SECONDS         Number of seconds gearmand server should wait for a worker to complete work before timing out
+
+  -v [LEVEL]         Increase verbosity level by one. (eg: -v vv | -v vvv)
+
+  -h,--help          Shows this help information
+  -V,--version       Display the version of the manager
+  -D,--dump [all]    Parse the command line and config file then dump it to the screen and exit.
+</code></pre>
+<h2>
+<a id="user-content-添加job-handler工作处理器" class="anchor" href="#%E6%B7%BB%E5%8A%A0job-handler%E5%B7%A5%E4%BD%9C%E5%A4%84%E7%90%86%E5%99%A8" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>添加job handler(工作处理器)</h2>
+<p>方法原型：</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">bool</span> <span class="pl-c1">BaseManager</span><span class="pl-k">::</span>addHandler(<span class="pl-k">string</span> <span class="pl-smi">$name</span>, <span class="pl-c1">mixed</span> <span class="pl-smi">$handler</span>, <span class="pl-k">array</span> <span class="pl-smi">$opts</span> <span class="pl-k">=</span> [])</span>
+<span class="pl-s1"><span class="pl-k">bool</span> <span class="pl-c1">BaseManager</span><span class="pl-k">::</span>addFunction(<span class="pl-k">string</span> <span class="pl-smi">$name</span>, <span class="pl-c1">mixed</span> <span class="pl-smi">$handler</span>, <span class="pl-k">array</span> <span class="pl-smi">$opts</span> <span class="pl-k">=</span> []) <span class="pl-c"><span class="pl-c">//</span> addHandler 的别名方法</span></span></pre></div>
+<p>参数：</p>
+<ul>
+<li>
+<code>$name</code> string 名称，给此工作命名</li>
+<li>
+<code>$handler</code> mixed 此工作的处理器。 可以是 函数名称，类名称，对象实例，闭包
+<ul>
+<li>使用类名称或对象实例 时，必须是 实现了 <code>__invoke</code> 方法 或者 实现了接口 <code>app\gearman\JobInterface</code>
+</li>
+</ul>
+</li>
+<li>
+<code>$opts</code> array 对当前工作的一些设置
+<ul>
+<li>
+<code>timeout</code> int 超时 秒</li>
+<li>
+<code>worker_num</code> int 需要多少个worker来处理此工作</li>
+<li>
+<code>focus_on</code> bool 需要上面的worker专注此工作，即只负责它，不再接其他的job</li>
+</ul>
+</li>
+</ul>
+<p>示例：</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> $mgr 是 inhere\gearman\GwManager 的实例</span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$mgr</span><span class="pl-k">-&gt;</span>addHandler(<span class="pl-s"><span class="pl-pds">'</span>echo_job<span class="pl-pds">'</span></span>, <span class="pl-c1">\inhere\gearman\examples\jobs\</span><span class="pl-c1">EchoJob</span><span class="pl-k">::</span><span class="pl-c1">class</span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> 对此job特殊设置 - 至少有4个worker做此工作，这些worker也同时会做其它的job</span></span>
+<span class="pl-s1"><span class="pl-smi">$mgr</span><span class="pl-k">-&gt;</span>addHandler(<span class="pl-s"><span class="pl-pds">'</span>echo_job<span class="pl-pds">'</span></span>, <span class="pl-c1">MyJob</span><span class="pl-k">::</span><span class="pl-c1">class</span>, [</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>worker_num<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">4</span>, </span>
+<span class="pl-s1">]);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> 对此job特殊设置 - 有2个worker专注做此工作，不接其它的job</span></span>
+<span class="pl-s1"><span class="pl-smi">$mgr</span><span class="pl-k">-&gt;</span>addHandler(<span class="pl-s"><span class="pl-pds">'</span>echo_job<span class="pl-pds">'</span></span>, <span class="pl-c1">MyOtherJob</span><span class="pl-k">::</span><span class="pl-c1">class</span>, [</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>worker_num<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">2</span>, </span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>focus_on<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">1</span>, </span>
+<span class="pl-s1">]);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * test</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-smi">$mgr</span><span class="pl-k">-&gt;</span>addFunction(<span class="pl-s"><span class="pl-pds">'</span>test_reverse<span class="pl-pds">'</span></span>, <span class="pl-k">function</span> (<span class="pl-smi">$workload</span>)</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-c1">ucwords</span>(<span class="pl-c1">strtolower</span>(<span class="pl-smi">$workload</span>));</span>
+<span class="pl-s1">});</span>
+<span class="pl-s1"></span></pre></div>
+<h2>
+<a id="user-content-manager-配置" class="anchor" href="#manager-%E9%85%8D%E7%BD%AE" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>manager 配置</h2>
+<p>全部的配置项请查看 <code>BaseManager::$config</code></p>
+<h2>
+<a id="user-content-job-配置" class="anchor" href="#job-%E9%85%8D%E7%BD%AE" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>job 配置</h2>
+<p>可以针对job进行特殊配置, 下面是可用配置项:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> BaseManager::$defaultJobOpt</span></span>
+<span class="pl-s1">[</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> 需要 'worker_num' 个 worker 处理这个 job</span></span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>worker_num<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">0</span>,</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> 当设置 focus_on = true, 这些 worker 将专注这一个job</span></span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>focus_on<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">false</span>, <span class="pl-c"><span class="pl-c">//</span> true | false</span></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> job 执行超时时间 秒</span></span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>timeout<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">200</span>,</span>
+<span class="pl-s1">]</span></pre></div>
+<h2>
+<a id="user-content-内置工具" class="anchor" href="#%E5%86%85%E7%BD%AE%E5%B7%A5%E5%85%B7" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>内置工具</h2>
+<h3>
+<a id="user-content-文件日志" class="anchor" href="#%E6%96%87%E4%BB%B6%E6%97%A5%E5%BF%97" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>文件日志</h3>
+<p>初始化存储目录：</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c1">FileLogger</span><span class="pl-k">::</span>create(<span class="pl-c1">__DIR__</span> <span class="pl-k">.</span> <span class="pl-s"><span class="pl-pds">'</span>/logs/jobs<span class="pl-pds">'</span></span>, <span class="pl-c1">FileLogger</span><span class="pl-k">::</span><span class="pl-c1">SPLIT_DAY</span>);</span></pre></div>
+<p>同时内置了 <code>inhere\gearman\jobs\UseLogJob</code> job handler 基类。 使用job类并继承它，就可以方便的记录日志</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">inhere\gearman\jobs\UseLogJob</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">MyJob</span> <span class="pl-k">extends</span> <span class="pl-e">UseLogJob</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">     * {@inheritDoc}</span></span>
+<span class="pl-s1"><span class="pl-c">     <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">    <span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">doRun</span>(<span class="pl-smi">$workload</span>, <span class="pl-c1">\</span><span class="pl-c1">GearmanJob</span> <span class="pl-smi">$job</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>info(<span class="pl-s"><span class="pl-pds">"</span>received workload=<span class="pl-smi">$workload</span><span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>err(<span class="pl-s"><span class="pl-pds">"</span>error ...<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">        <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>receive: <span class="pl-smi">$workload</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span></pre></div>
+<h3>
+<a id="user-content-请求转发job-handler" class="anchor" href="#%E8%AF%B7%E6%B1%82%E8%BD%AC%E5%8F%91job-handler" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>请求转发Job handler</h3>
+<p>提供了请求转发job基类: <code>inhere\gearman\jobs\RequestProxyJob</code>.</p>
+<ul>
+<li>通用的请求转发工作处理器基类.</li>
+<li>你只需要关注数据验证，设置好正确的 <code>$baseUrl</code>(api host) 和 <code>$path</code>(api path) (可选的 <code>$method</code>)</li>
+<li>正确的数据将会原样的发送给接口地址(<code>$baseUrl + $path</code>)</li>
+</ul>
+<p>使用：</p>
+<ol>
+<li>不关注数据格式，使用： <code>inhere\gearman\jobs\StdRequestProxyJob</code>
+</li>
+</ol>
+<p><code>StdRequestProxyJob</code> 通用的项目请求代理job handler,继承自 <code>RequestProxyJob</code>.</p>
+<p>针对通用的不在此处关心数据格式的内部接口，即是原样的数据转发</p>
+<p>usage:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$mgr</span><span class="pl-k">-&gt;</span>addHandler(<span class="pl-s"><span class="pl-pds">'</span>user_api<span class="pl-pds">'</span></span>, <span class="pl-k">new</span> <span class="pl-c1">StdRequestProxyJob</span>(<span class="pl-s"><span class="pl-pds">'</span>http://user.domain.com<span class="pl-pds">'</span></span>));</span>
+<span class="pl-s1"><span class="pl-smi">$mgr</span><span class="pl-k">-&gt;</span>addHandler(<span class="pl-s"><span class="pl-pds">'</span>goods_api<span class="pl-pds">'</span></span>, <span class="pl-k">new</span> <span class="pl-c1">StdRequestProxyJob</span>(<span class="pl-s"><span class="pl-pds">'</span>http://goods.domain.com<span class="pl-pds">'</span></span>));</span></pre></div>
+<p>in client:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$client</span><span class="pl-k">-&gt;</span>doBackground(<span class="pl-s"><span class="pl-pds">'</span>user_api<span class="pl-pds">'</span></span>, [</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>_uri<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>/update-info<span class="pl-pds">'</span></span>, <span class="pl-c"><span class="pl-c">//</span> will request: http://user.domain.com/update-info</span></span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>userId<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">123</span>,</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> ... ...</span></span>
+<span class="pl-s1">]);</span></pre></div>
+<ol start="2">
+<li>继承 <code>inhere\gearman\jobs\RequestProxyJob</code>
+</li>
+</ol>
+<p>想在数据转发前做一些事情，比如 验证数据结构。</p>
+<p>usage:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">UserAfterRegisterJob</span> <span class="pl-k">extends</span> <span class="pl-e">RequestProxyJob</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">  <span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">beforeSend</span>(<span class="pl-k">array</span> <span class="pl-k">&amp;</span><span class="pl-smi">$payload</span>)</span>
+<span class="pl-s1">  {</span>
+<span class="pl-s1">      <span class="pl-k">if</span> (<span class="pl-k">!</span><span class="pl-c1">isset</span>(<span class="pl-smi">$payload</span>[<span class="pl-s"><span class="pl-pds">'</span>userId<span class="pl-pds">'</span></span>]) <span class="pl-k">||</span> <span class="pl-smi">$payload</span>[<span class="pl-s"><span class="pl-pds">'</span>userId<span class="pl-pds">'</span></span>] <span class="pl-k">&lt;=</span> <span class="pl-c1">0</span>) {</span>
+<span class="pl-s1">          <span class="pl-k">return</span> <span class="pl-c1">false</span>;</span>
+<span class="pl-s1">      }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">      <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">baseUrl</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>http://inner-api.domain.com<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">      <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">path</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>/user/after-register<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">      <span class="pl-k">return</span> <span class="pl-c1">true</span>;</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1">}</span></pre></div>
+<h2>
+<a id="user-content-monitor的web面板" class="anchor" href="#monitor%E7%9A%84web%E9%9D%A2%E6%9D%BF" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>monitor的web面板</h2>
+<p>内置了简单的 monitor 的web面板，可以查看 server, jobs, workers 的信息。</p>
+<blockquote>
+<p>只是简单的实现，刷新一次页面才更新一次信息。 但是相关工具类已经提供，可以自己自定义扩展。</p>
+</blockquote>
+<p>在项目目录执行：</p>
+<div class="highlight highlight-source-shell"><pre> php -S 127.0.0.1:5888 -t monitor</pre></div>
+<p>然后打开浏览器访问 <a href="http://127.0.0.1:5888">http://127.0.0.1:5888</a> 效果：</p>
+<p><a href="///E://workenv/php-dockerized/www/phplang/library/gearman-manager/monitor/assets/preview.png" target="_blank"><img src="///E://workenv/php-dockerized/www/phplang/library/gearman-manager/monitor/assets/preview.png" alt="" style="max-width:100%;"></a></p>
+<h2>
+<a id="user-content-license" class="anchor" href="#license" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>License</h2>
+<p>BSD</p>
+</article></body></html>

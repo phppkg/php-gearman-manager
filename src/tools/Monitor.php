@@ -67,7 +67,7 @@ class Monitor
     const SORT_SERVER = 'server';
     const SORT_NAME = 'name';
     const SORT_JOBS_IN_QUEUE = 'in_queue';
-    const SORT_JOBS_RUNNING = 'jobs_running';
+    const SORT_JOBS_RUNNING = 'in_running';
     const SORT_WORKERS = 'capable_workers';
     const SORT_IP = 'ip';
     const SORT_FD = 'fd';
@@ -209,16 +209,16 @@ class Monitor
     }
 
     /**
-     * Returns information about Gearman server versions
+     * Returns information about Gearman servers data
      *
      * @return array
      */
-    public function getVersionData()
+    public function getServersData()
     {
         $data = [];
 
         foreach ($this->_servers as $index => $server) {
-            if (!empty($this->_filterServers) && !in_array($index, $this->_filterServers)) {
+            if ($this->_filterServers && !in_array($index, $this->_filterServers)) {
                 continue;
             }
 
@@ -226,6 +226,8 @@ class Monitor
                 $gmd = new TelnetGmdServer($server['address']);
 
                 $data[$index] = array(
+                    'index' => $index,
+                    'name' => $server['name'],
                     'version' => $gmd->version(),
                     'address' => $server['address']
                 );
@@ -269,7 +271,7 @@ class Monitor
                         if ($this->_groupby !== self::GROUP_NONE) {
                             if (isset($groupDataTmp[$row[$this->_groupby]])) {
                                 $k = $groupDataTmp[$row[$this->_groupby]];
-                                foreach (array('in_queue', 'jobs_running', 'capable_workers') as $key) {
+                                foreach (['in_queue', 'in_running', 'capable_workers'] as $key) {
                                     $data[$k][$key] += $row[$key];
                                 }
                             } else {
@@ -317,9 +319,13 @@ class Monitor
                     if (
                         strlen($this->_filterName) == 0 ||
                         stripos($worker['ip'], $this->_filterName) !== false ||
-                        stripos(explode('$#!', $worker['jobNames']), $this->_filterName) !== false
+                        stripos(implode('$#!', $worker['job_names']), $this->_filterName) !== false
                     ) {
-                        sort($worker['jobNames'], SORT_STRING);
+
+                        if ($worker['job_names']) {
+                            sort($worker['job_names'], SORT_STRING);
+                        }
+
                         $worker['server'] = $server['name'];
                         $data[] = $worker;
                     }

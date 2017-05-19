@@ -14,7 +14,9 @@ namespace inhere\gearman\tools;
  */
 class TelnetGmdServer extends Telnet
 {
-    public $statusFields = ['job_name', 'in_queue', 'jobs_running', 'capable_workers'];
+    const STATUS_FIELDS = ['job_name', 'in_queue', 'in_running', 'capable_workers'];
+
+    const WORKERS_FIELDS = ['id', 'ip', 'job_names'];
 
     public function __construct($host = '127.0.0.1', $port = 4730, array $config = [])
     {
@@ -53,7 +55,7 @@ class TelnetGmdServer extends Telnet
             list(
                 $item['job_name'],
                 $item['in_queue'],
-                $item['jobs_running'],
+                $item['in_running'],
                 $item['capable_workers']
             ) = explode(' ', trim(preg_replace('/\s+/', ' ', $row)));
 
@@ -62,8 +64,6 @@ class TelnetGmdServer extends Telnet
 
         return $data;
     }
-
-    public $workerFields = ['id', 'ip', 'job_names'];
 
     public function workersInfo()
     {
