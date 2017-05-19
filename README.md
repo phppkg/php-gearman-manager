@@ -11,7 +11,7 @@ Learning reference the project **[brianlmoon/GearmanManager](https://github.com/
 add some feature:
 
 - Code is easier to read and understand
-- Can support `reload` `restart` `stop` `status` command
+- Can support `start` `reload` `restart` `stop` `status` command
 - More useful feature
 
 > only support linux system, and require enable `pcntl` `posix` 

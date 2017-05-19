@@ -7,6 +7,7 @@
  */
 
 namespace inhere\gearman\tools;
+
 use Exception;
 
 /**
