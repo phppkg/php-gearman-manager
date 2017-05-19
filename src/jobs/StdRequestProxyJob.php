@@ -33,6 +33,17 @@ namespace inhere\gearman\jobs;
 class StdRequestProxyJob extends RequestProxyJob
 {
     /**
+     * StdRequestProxyJob constructor.
+     * @param $baseUrl
+     */
+    public function __construct($baseUrl)
+    {
+        $this->baseUrl = $baseUrl;
+
+        parent::__construct();
+    }
+
+    /**
      * @param array $payload
      * @return bool
      */
@@ -46,7 +57,6 @@ class StdRequestProxyJob extends RequestProxyJob
             $this->method = trim($payload['_method']);
         }
 
-        $this->baseUrl = \Ugs::$app->params['inner_api']['appv2'];
         $this->path = trim($payload['_uri']);
 
         unset($payload['_uri']);

@@ -49,6 +49,12 @@ trait WorkerTrait
      */
     protected $pipeHandle;
 
+    /**
+     * @deprecated unused
+     * @param $workerId
+     * @param $message
+     * @return bool
+     */
     protected function pipeMessage($workerId, $message)
     {
         if (!$this->pipeHandle) {
@@ -68,6 +74,13 @@ trait WorkerTrait
         }
     }
 
+    /**
+     * @deprecated unused
+     * @param $command
+     * @param $message
+     * @param bool $readResult
+     * @return bool|int|string
+     */
     protected function sendMessage($command, $message, $readResult = true)
     {
         if (!$this->pipeHandle) {

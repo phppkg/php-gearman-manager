@@ -24,7 +24,7 @@ class CurlHelper
     /**
      * @var int
      */
-    private $errno;
+    private $errNo;
 
     /**
      * @var string
@@ -215,8 +215,8 @@ class CurlHelper
                 if (false === in_array($curlErrNo, self::$canRetryErrorCodes, true) || !$retries) {
                     $curlError = curl_error($ch);
 
-                    $this->errno = $curlErrNo;
-                    $this->error = sprintf('Curl error (code %s): %s', $this->errno, $curlError);
+                    $this->errNo = $curlErrNo;
+                    $this->error = sprintf('Curl error (code %s): %s', $this->errNo, $curlError);
                 }
 
                 $retries--;
@@ -266,6 +266,41 @@ class CurlHelper
     }
 
     /**
+     * @return array
+     */
+    public function getConfig()
+    {
+        return $this->config;
+    }
+
+    /**
+     * @param array $config
+     * @return $this
+     */
+    public function setConfig(array $config)
+    {
+        $this->config = array_merge($this->config, $config);
+
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getErrNo()
+    {
+        return $this->errNo;
+    }
+
+    /**
+     * @return string
+     */
+    public function getError()
+    {
+        return $this->error;
+    }
+
+    /**
      * @param string $url
      * @return $this
      */
@@ -285,6 +320,14 @@ class CurlHelper
     }
 
     /**
+     * @return array
+     */
+    public function getInfo()
+    {
+        return $this->info;
+    }
+
+    /**
      * isOk
      * @return boolean
      */
@@ -296,43 +339,24 @@ class CurlHelper
     /**
      * @return int
      */
-    public function getErrno()
+    public function getHttpCode()
     {
-        return $this->errno;
+        return isset($this->info['http_code']) ? $this->info['http_code'] : 200;
     }
 
     /**
-     * @return string
+     * @return int
      */
-    public function getError()
+    public function getConnectTime()
     {
-        return $this->error;
+        return isset($this->info['connect_time']) ? $this->info['connect_time'] : 0;
     }
 
     /**
-     * @return array
+     * @return int
      */
-    public function getInfo()
+    public function getTotalTime()
     {
-        return $this->info;
-    }
-
-    /**
-     * @return array
-     */
-    public function getConfig()
-    {
-        return $this->config;
-    }
-
-    /**
-     * @param array $config
-     * @return $this
-     */
-    public function setConfig(array $config)
-    {
-        $this->config = array_merge($this->config, $config);
-
-        return $this;
+        return isset($this->info['total_time']) ? $this->info['total_time'] : 0;
     }
 }

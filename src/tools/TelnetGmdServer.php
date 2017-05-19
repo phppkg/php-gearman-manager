@@ -14,15 +14,27 @@ namespace inhere\gearman\tools;
  */
 class TelnetGmdServer extends Telnet
 {
+    /**
+     * array
+     */
     const STATUS_FIELDS = ['job_name', 'in_queue', 'in_running', 'capable_workers'];
 
+    /**
+     * array
+     */
     const WORKERS_FIELDS = ['id', 'ip', 'job_names'];
 
+    /**
+     * {@inheritDoc}
+     */
     public function __construct($host = '127.0.0.1', $port = 4730, array $config = [])
     {
         parent::__construct($host, $port, $config);
     }
 
+    /**
+     * @return string
+     */
     public function version()
     {
         // eg: OK 1.1.12
@@ -31,6 +43,10 @@ class TelnetGmdServer extends Telnet
         return substr(trim($version), 2);
     }
 
+    /**
+     * get status information
+     * @return array|null
+     */
     public function statusInfo()
     {
         /* @see $statusFields
@@ -65,6 +81,10 @@ class TelnetGmdServer extends Telnet
         return $data;
     }
 
+    /**
+     * get workers information
+     * @return array|null
+     */
     public function workersInfo()
     {
         /*

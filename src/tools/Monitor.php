@@ -7,6 +7,7 @@
  */
 
 namespace inhere\gearman\tools;
+use Exception;
 
 /**
  * Class Monitor
@@ -82,7 +83,6 @@ class Monitor
 
     /**
      * Class constructor
-     *
      * @param array $options
      */
     public function __construct(array $options = [])
@@ -92,7 +92,6 @@ class Monitor
 
     /**
      * Set class options
-     *
      * @param array $options
      */
     public function setOptions(array $options)
@@ -120,7 +119,6 @@ class Monitor
 
     /**
      * Clear server list
-     *
      * @return self
      */
     public function clearServers()
@@ -132,7 +130,6 @@ class Monitor
 
     /**
      * Add a server to the list
-     *
      * @param int $index
      * @param array $serverValues
      * @return self
@@ -146,7 +143,6 @@ class Monitor
 
     /**
      * Add several servers to the list
-     *
      * @param array $servers
      * @return self
      */
@@ -161,7 +157,6 @@ class Monitor
 
     /**
      * Set server list
-     *
      * @param array $servers
      * @return self
      */
@@ -172,7 +167,6 @@ class Monitor
 
     /**
      * Returns server list
-     *
      * @return array
      */
     public function getServers()
@@ -182,7 +176,6 @@ class Monitor
 
     /**
      * Return error messages
-     *
      * @param boolean $duplicates Fetch duplicate messages
      * @return array
      */
@@ -197,7 +190,6 @@ class Monitor
 
     /**
      * Add error message to error list
-     *
      * @param string $message
      * @return self
      */
@@ -210,7 +202,6 @@ class Monitor
 
     /**
      * Returns information about Gearman servers data
-     *
      * @return array
      */
     public function getServersData()
@@ -244,7 +235,6 @@ class Monitor
 
     /**
      * Returns information about Gearman registered functions
-     *
      * @return array
      */
     public function getFunctionData()
@@ -383,6 +373,7 @@ class Monitor
      * Sort Gearman functions data
      *
      * @param array $data
+     * @param array $colsAvailable
      * @return array
      */
     protected function _sortData(array $data, $colsAvailable)
