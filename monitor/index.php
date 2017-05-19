@@ -11,11 +11,11 @@ $monitor = new Monitor([
    'servers' => [
        [
            'name' => 'test',
-           'address' => '192.168.101.2:4730',
+           'address' => '10.0.0.2:4730',
        ],
        [
            'name' => 'product',
-           'address' => '192.168.139.1:4730',
+           'address' => '10.0.0.1:4730',
        ]
    ]
 ]);
@@ -30,7 +30,7 @@ render_view(__DIR__ . '/views/monitor.html', [
    'workersInfo' => $workersInfo,
 ]);
 
-function render_view($view, array $data)
+function render_view($view, array $data = [])
 {
     extract($data);
 
