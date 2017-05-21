@@ -11,16 +11,49 @@ namespace inhere\gearman\traits;
 use inhere\gearman\Helper;
 
 /**
- * Class WorkerTrait
+ * Class ProcessManageTrait
  * @package inhere\gearman\traits
  */
-trait WorkerTrait
+trait ProcessManageTrait
 {
     /**
      * The worker id
      * @var int
      */
     protected $id = 0;
+
+    ///////// process control //////////
+
+    /**
+     * The PID of the current running process. Set for parent and child processes
+     */
+    protected $pid = 0;
+
+    /**
+     * The PID of the parent(master) process, when running in the forked helper,worker.
+     */
+    protected $masterPid = 0;
+
+    /**
+     * @var bool
+     */
+    protected $isMaster = false;
+
+    /**
+     * @var bool
+     */
+    protected $isWorker = false;
+
+    /**
+     * @var string
+     */
+    protected $pidFile;
+
+    /**
+     * When true, workers will stop look for jobs and the parent process will kill off all running workers
+     * @var boolean
+     */
+    protected $stopWork = false;
 
     /**
      * workers
@@ -51,11 +84,11 @@ trait WorkerTrait
 
     /**
      * @deprecated unused
-     * @param $workerId
-     * @param $message
+     * param $workerId
+     * param $message
      * @return bool
      */
-    protected function pipeMessage($workerId, $message)
+    protected function pipeMessage()
     {
         if (!$this->pipeHandle) {
             return false;
@@ -72,6 +105,8 @@ trait WorkerTrait
                 'data' => 'received data: ' . json_encode($json->data),
             ]));
         }
+
+        return true;
     }
 
     /**
@@ -102,6 +137,26 @@ trait WorkerTrait
     }
 
     /**
+     * Daemon, detach and run in the background
+     */
+    protected function runAsDaemon()
+    {
+        $pid = pcntl_fork();
+
+        if ($pid > 0) {// at parent
+            // disable trigger stop event in the __destruct()
+            $this->isMaster = false;
+            $this->clear();
+            $this->quit();
+        }
+
+        $this->pid = getmypid();
+        posix_setsid();
+
+        return true;
+    }
+
+    /**
      * Bootstrap a set of workers and any vars that need to be set
      */
     protected function startWorkers()
@@ -121,8 +176,7 @@ trait WorkerTrait
             }
 
             for ($x = 0; $x < $num; $x++) {
-                $lastWorkerId++;
-                $this->startWorker($jobAry, $lastWorkerId);
+                $this->startWorker($jobAry, $lastWorkerId++);
 
                 // Don't start workers too fast. They can overwhelm the gearmand server and lead to connection timeouts.
                 usleep(500000);
@@ -139,10 +193,9 @@ trait WorkerTrait
             $workerNum = $this->jobsOpts[$job]['worker_num'];
 
             while ($workersCount[$job] < $workerNum) {
-                $lastWorkerId++;
                 $workersCount[$job]++;
 
-                $this->startWorker($job, $lastWorkerId);
+                $this->startWorker($job, $lastWorkerId++);
 
                 usleep(500000);
             }
@@ -290,6 +343,53 @@ trait WorkerTrait
     }
 
     /**
+     * Do shutdown Manager
+     * @param  int $pid Master Pid
+     * @param  boolean $quit Quit, When stop success?
+     */
+    protected function stopMaster($pid, $quit = true)
+    {
+        $this->stdout("Stop the manager(PID:$pid)");
+
+        // do stop
+        // 向主进程发送此信号(SIGTERM)服务器将安全终止；也可在PHP代码中调用`$server->shutdown()` 完成此操作
+        if (!$this->killProcess($pid, SIGTERM)) {
+            $this->stdout("Stop the manager process(PID:$pid) failed!");
+        }
+
+        $startTime = time();
+        $timeout = 30;
+        $this->stdout("Stopping .", false);
+
+        // wait exit
+        while (true) {
+            if (!$this->isRunning($pid)) {
+                break;
+            }
+
+            if (time() - $startTime > $timeout) {
+                $this->stdout("Stop the manager process(PID:$pid) failed(timeout)!", true, -2);
+                break;
+            }
+
+            $this->stdout('.', false);
+            sleep(1);
+        }
+
+        // stop success
+        $this->stdout("\nThe manager stopped.\n");
+
+        if ($quit) {
+            $this->quit();
+        }
+
+        // clear file info
+        clearstatcache();
+
+        $this->stdout("Begin restart manager ...");
+    }
+
+    /**
      * reloadWorkers
      * @param $masterPid
      */
@@ -360,6 +460,46 @@ trait WorkerTrait
         $this->log($message, self::LOG_PROC_INFO);
     }
 
+
+    /**
+     * savePidFile
+     */
+    protected function savePidFile()
+    {
+        if ($this->pidFile && !file_put_contents($this->pidFile, $this->pid)) {
+            $this->showHelp("Unable to write PID to the file {$this->pidFile}");
+        }
+    }
+
+    /**
+     * delete pidFile
+     */
+    protected function delPidFile()
+    {
+        if ($this->pidFile && file_exists($this->pidFile) && !unlink($this->pidFile)) {
+            $this->log("Could not delete PID file: {$this->pidFile}", self::LOG_WARN);
+        }
+    }
+
+    /**
+     * mark stopWork
+     */
+    protected function stopWork()
+    {
+        //if ()
+        $this->stopWork = true;
+        $this->meta['stop_time'] = time();
+    }
+
+    /**
+     * exit
+     * @param int $code
+     */
+    protected function quit($code = 0)
+    {
+        exit((int)$code);
+    }
+
     /**
      * getWorkerId
      * @param  int $pid
@@ -387,5 +527,29 @@ trait WorkerTrait
         }
 
         return $thePid;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getPid()
+    {
+        return $this->pid;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPidFile()
+    {
+        return $this->pidFile;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPidRole()
+    {
+        return $this->isMaster ? 'Master' : 'Worker';
     }
 }
