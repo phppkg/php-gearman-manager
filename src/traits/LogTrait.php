@@ -258,6 +258,14 @@ trait LogTrait
     }
 
     /**
+     * @return array
+     */
+    public static function getLevels()
+    {
+        return self::$levels;
+    }
+
+    /**
      * getLogFile
      * @return string
      */
