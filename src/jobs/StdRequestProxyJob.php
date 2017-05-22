@@ -49,7 +49,7 @@ class StdRequestProxyJob extends RequestProxyJob
      */
     protected function beforeSend(array &$payload)
     {
-        if (!isset($payload['_uri']) || $payload['_uri']) {
+        if (!isset($payload['_uri']) || !$payload['_uri']) {
             return false;
         }
 
@@ -59,7 +59,7 @@ class StdRequestProxyJob extends RequestProxyJob
 
         $this->path = trim($payload['_uri']);
 
-        unset($payload['_uri']);
+        unset($payload['_uri'], $payload['_method']);
         return true;
     }
 }

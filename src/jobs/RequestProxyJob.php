@@ -95,13 +95,13 @@ abstract class RequestProxyJob extends UseLogJob
         $baseUrl = $this->baseUrl;
         $path = $this->path;
 
-        $this->info("Request method=$method host=$baseUrl path=$path data=$workload");
+        $this->info("Request method=$method host=$baseUrl path=$path data=" . json_encode($payload));
 
         $curl = new CurlHelper();
         $ret = $curl->setBaseUrl($baseUrl)->$method($path, $payload);
         // $ary = json_decode($ret, true);
 
-        if ($curl->isOk()) {
+        if ($this->resultValidate($ret, $curl)) {
             $this->info("Successful for the job, remote return=$ret");
 
             return true;
@@ -110,9 +110,20 @@ abstract class RequestProxyJob extends UseLogJob
         $this->err("Failed for the job, remote return=$ret send=", [
             'method' => $method,
             'api' => $baseUrl . $path,
-            'data' => $payload,
+            'send' => $payload,
         ]);
 
         return false;
+    }
+
+    /**
+     * resultValidate
+     * @param  string     $result
+     * @param  CurlHelper $curl
+     * @return bool
+     */
+    protected function resultValidate($result, CurlHelper $curl)
+    {
+        return $curl->isOk();
     }
 }
