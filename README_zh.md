@@ -153,17 +153,17 @@ bool BaseManager::addFunction(string $name, mixed $handler, array $opts = []) //
 示例：
 
 ```php
-// $mgr 是 inhere\gearman\GwManager 的实例
+// $mgr 是 inhere\gearman\LiteManager|inhere\gearman\Manager 的实例
 
-$mgr->addHandler('echo_job', \inhere\gearman\examples\jobs\EchoJob::class);
+$mgr->addHandler('test_echo_job', \inhere\gearman\examples\jobs\EchoJob::class);
 
 // 对此job特殊设置 - 至少有4个worker做此工作，这些worker也同时会做其它的job
-$mgr->addHandler('echo_job', MyJob::class, [
+$mgr->addHandler('my_job', MyJob::class, [
     'worker_num' => 4, 
 ]);
 
 // 对此job特殊设置 - 有2个worker专注做此工作，不接其它的job
-$mgr->addHandler('echo_job', MyOtherJob::class, [
+$mgr->addHandler('my_other_job', MyOtherJob::class, [
     'worker_num' => 2, 
     'focus_on' => 1, 
 ]);

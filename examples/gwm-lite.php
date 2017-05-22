@@ -12,6 +12,8 @@ use inhere\gearman\tools\FileLogger;
 
 error_reporting(E_ALL | E_STRICT);
 date_default_timezone_set('Asia/Shanghai');
+define('ROOT_PATH', dirname(__DIR__));
+
 require __DIR__ . '/simple-autoloader.php';
 
 // create job logger
