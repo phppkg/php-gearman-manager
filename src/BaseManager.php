@@ -136,7 +136,7 @@ abstract class BaseManager implements ManagerInterface
      * The default job option
      * @var array
      */
-    private static $defaultJobOpt = [
+    protected static $defaultJobOpt = [
         // 需要 'worker_num' 个 worker 处理这个 job
         'worker_num' => 0,
         // 当设置 focus_on = true, 这些 worker 将专注这一个job

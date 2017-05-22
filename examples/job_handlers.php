@@ -4,14 +4,13 @@
  * @var \inhere\gearman\BaseManager $mgr
  */
 
-$mgr->addHandler('test_pipe', function ($string, \GearmanJob $job, $mgr)
-{
-    $data = $worker->sendMessage('status');
+// $mgr->addHandler('test_pipe', function ($workload, \GearmanJob $job, $mgr)
+// {
+//     $data = $worker->sendMessage('status');
+//     echo $data . PHP_EOL;
+// });
 
-    echo $data . PHP_EOL;
-});
-
-$mgr->addHandler('test_reverse', function ($string, \GearmanJob $job)
+$mgr->addHandler('test_reverse', function ($workload, \GearmanJob $job)
 {
     echo ucwords(strrev($workload)) . PHP_EOL;
 });

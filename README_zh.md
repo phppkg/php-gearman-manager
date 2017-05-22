@@ -71,9 +71,13 @@ php examples/gwm.php --help
 php examples/gwm.php -D
 ```
 
+运行截图：
+
+![](monitor/assets/cli-ps-status.png)
+
 ## 命令以及选项说明
 
-在命令行里使用 `php examples/gwm.php -h` 可以查看到所有的命令和选项信息
+在命令行里使用 `php examples/gwm.php -h` 可以查看到所有的命令和选项信息, 下面只对几个特殊选项写了中文说明
 
 > 命令行里设定的选项将会覆盖文件配置。
 
@@ -245,7 +249,7 @@ class MyJob extends UseLogJob
 
 使用：
 
-1. 不关注数据格式，使用： `inhere\gearman\jobs\StdRequestProxyJob`
+- 若不关注数据格式，使用： `inhere\gearman\jobs\StdRequestProxyJob`
 
 `StdRequestProxyJob` 通用的项目请求代理job handler,继承自 `RequestProxyJob`. 
 
@@ -268,7 +272,7 @@ $client->doBackground('user_api', [
 ]);
 ```
 
-2. 继承 `inhere\gearman\jobs\RequestProxyJob`
+- 继承 `inhere\gearman\jobs\RequestProxyJob`
 
 对一些要求高的api，想在数据转发前做一些事情，比如 验证数据结构。
 

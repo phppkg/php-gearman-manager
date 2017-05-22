@@ -23,6 +23,6 @@ class TestJob
      */
     public function __invoke($workload, \GearmanJob $job)
     {
-        printf("this is %s, success received data. Job=%s Data=$workload\n", __METHOD__, $this->name) ;
+        printf("this is %s, success received data. Job=%s Data=$workload\n", __METHOD__, $job->functionName()) ;
     }
 }
