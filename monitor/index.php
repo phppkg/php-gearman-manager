@@ -1,5 +1,6 @@
 <?php
 
+use inhere\gearman\Helper;
 use \inhere\gearman\tools\Monitor;
 use \inhere\gearman\tools\TelnetGmdServer;
 
@@ -9,103 +10,65 @@ define('ROOT_PATH', dirname(__DIR__));
 
 require dirname(__DIR__) . '/examples/simple-autoloader.php';
 
-get_log_info();die;
+if (!Helper::isAjax()) {
+    Helper::render(__DIR__ . '/views/index.html', [
 
-$route = isset($_GET['r']) ? $_GET['r']: '';
-
-if ($route === 'log-info') {
-    # code...
-} else {
-    show_monitor_info();
+    ]);
 }
 
-function show_monitor_info()
+$route = Helper::get('r');
+
+switch ($route) {
+    case 'log-info':
+        get_log_info();
+        break;
+
+    default:
+        get_monitor_info();
+        break;
+}
+
+function get_monitor_info()
 {
+    $servers = Helper::get('servers', []);
+
+    if (!$servers) {
+
+    }
+
     $monitor = new Monitor([
-       'servers' => [
-           [
-               'name' => 'test',
-               'address' => '10.0.0.2:4730',
-           ],
-           [
-               'name' => 'product',
-               'address' => '10.0.0.1:4730',
-           ]
-       ]
+        'servers' => $servers,
+//       'servers' => [
+//           [
+//               'name' => 'test',
+//               'address' => '10.0.0.2:4730',
+//           ],
+//           [
+//               'name' => 'product',
+//               'address' => '10.0.0.1:4730',
+//           ]
+//       ]
     ]);
 
-    $statusInfo = json_encode($monitor->getFunctionData());
-    $workersInfo = json_encode($monitor->getWorkersData());
-
-    render_view(__DIR__ . '/views/monitor.html', [
-       'servers' => json_encode($monitor->getServersData()),
-       'statusInfo' => $statusInfo,
-       'workersInfo' => $workersInfo,
+    Helper::outJson([
+       'servers' => $monitor->getServersData(),
+       'statusInfo' => $monitor->getFunctionData(),
+       'workersInfo' => $monitor->getWorkersData(),
     ]);
 }
 
-function get_log_info($date = '', $key = 'started')
+function get_log_info()
 {
+    $date = Helper::get('date', date('Y-m-d'));
+    $type = Helper::get('type', 'started');
+
     // $name = 'manager.log';
-    $realName = sprintf('manager_%s.log', $date ? : date('Y-m-d'));
+    $realName = sprintf('manager_%s.log', '2017-05-21');
     $file = ROOT_PATH . '/examples/logs/' . $realName;
 
-    if (!is_file($file)) {
-        out_json([], -200, 'log file not exists!');
-    }
+    $lp = new \inhere\gearman\tools\LogParser($file);
 
-    // started jobs
-    exec("cat $file | grep 'Starting job'", $result);
-
-    // completed jobs
-    exec("cat $file | grep ' completed'", $result);
-
-    // Failed jobs
-    exec("cat $file | grep 'Failed'", $result);
-
-    var_dump($result);
-
-    // out_json([
-    // ]);
+    var_dump($lp->getWorkerStartTimes(),$lp->getInfo($type));
 }
 
-function render_view($view, array $data = [])
-{
-    extract($data);
 
-    require $view;
-}
-
-function out_json(array $data = [], $code = 0, $msg = 'successful')
-{
-    if (!headers_sent()) {
-        header("Content-type: application/json;charset=utf-8");
-    }
-
-    exit(json_encode([
-        'code' => (int)$code,
-        'msg' => $msg,
-        'data' => $data,
-    ]));
-}
-
-function parse_log($logs)
-{
-    if (!$logs) {
-        return null;
-    }
-
-    $data = [];
-    foreach ($logs as $log) {
-        $info = explode('] ', $log);
-        list($role, $pid) = explode(':', $info[1]);
-        $data[] = [
-            'time' => $info[0],
-            'role' => $role,
-            'pid' => $pid,
-            'level' => $info[2],
-        ];
-    }
-
-
-}

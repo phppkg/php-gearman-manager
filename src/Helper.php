@@ -143,4 +143,58 @@ class Helper
         // return preg_replace('/\033\[(?:\d;?)+m/', '' , "\033[0;36mtext\033[0m");
         return preg_replace('/\033\[(?:\d;?)+m/', '', $text);
     }
+
+    /**
+     * @return bool
+     */
+    public static function isAjax()
+    {
+        return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH']==='XMLHttpRequest';
+    }
+
+    /**
+     * @param $name
+     * @param null $default
+     * @return mixed
+     */
+    public static function get($name, $default = null)
+    {
+        return isset($_GET[$name]) ? $_GET[$name]: $default;
+    }
+
+    /**
+     * @param string $view
+     * @param array $data
+     * @param bool $quit
+     */
+    public static function render($view, array $data = [], $quit = true)
+    {
+        if ($data) {
+            extract($data);
+        }
+
+        require $view;
+
+        if ($quit) {
+            exit;
+        }
+    }
+
+    /**
+     * @param array $data
+     * @param int $code
+     * @param string $msg
+     */
+    public static function outJson(array $data = [], $code = 0, $msg = 'successful')
+    {
+        if (!headers_sent()) {
+            header("Content-type: application/json;charset=utf-8");
+        }
+
+        exit(json_encode([
+            'code' => (int)$code,
+            'msg' => $msg,
+            'data' => $data,
+        ]));
+    }
 }
