@@ -460,6 +460,18 @@ trait ProcessManageTrait
         $this->log($message, self::LOG_PROC_INFO);
     }
 
+    /**
+     * @param string $pidFile
+     * @return int
+     */
+    protected function getPidFromFile($pidFile)
+    {
+        if ($pidFile && file_exists($pidFile)) {
+            return (int)trim(file_get_contents($pidFile));
+        }
+
+        return 0;
+    }
 
     /**
      * savePidFile

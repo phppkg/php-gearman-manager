@@ -168,7 +168,7 @@ class Manager extends LiteManager
             }
 
             if (0 === strpos($result, 'ERR')) {
-                $this->log("Failed to get status: $s, result: $result", self::LOG_ERROR);
+                $this->log("Failed to get status: $s, result: $result, server: $s", self::LOG_ERROR);
                 $this->stopWork();
                 $this->quit(self::CODE_CONNECT_ERROR);
             }

@@ -22,16 +22,16 @@ class ApiRequestProxyJob extends RequestProxyJob
      */
     protected function beforeSend(array $payload)
     {
-        if (!isset($payload['_uri']) || $payload['_uri']) {
+        if (!isset($payload['_uri']) || !$payload['_uri']) {
             return false;
         }
 
         if (isset($payload['_method'])) {
-            $this->method = $payload['_method'];
+            $this->method = trim($payload['_method']);
         }
 
-        $this->baseUrl = 'your api host'; // todo write you api host address. eg: http://api.site.com
-        $this->path = trim($payload['_uri']);
+        $this->baseUrl = 'your api host'; // TODO write you api host address. eg: http://api.site.com
+        $this->path = trim($payload['_uri'], $payload['_method']);
 
         return true;
     }

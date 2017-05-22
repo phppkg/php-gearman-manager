@@ -18,6 +18,99 @@ use inhere\gearman\jobs\JobInterface;
 class LiteManager extends BaseManager
 {
     /**
+     * add a job handler
+     * @param string $name The job name
+     * @param callable $handler The job handler
+     * @param array $opts The job options. more @see $jobsOpts property.
+     * options allow: [
+     *  'timeout' => int
+     *  'worker_num' => int
+     *  'focus_on' => int
+     * ]
+     * @return bool
+     */
+    public function addHandler($name, $handler, array $opts = [])
+    {
+        if ($this->hasJob($name)) {
+            $this->log("The job name [$name] has been registered. don't allow repeat add.", self::LOG_WARN);
+
+            return false;
+        }
+
+        if (!$handler && (!is_string($handler) || !is_object($handler))) {
+            throw new \InvalidArgumentException("The job [$name] handler data type only allow: string,object");
+        }
+
+        // no test handler
+        if ($this->config['no_test'] && 0 === strpos($name, 'test')) {
+            return false;
+        }
+
+        // only added
+        if (($added = $this->get('added_jobs')) && !in_array($name, $added, true)) {
+            return false;
+        }
+
+        $this->trigger(self::EVENT_BEFORE_PUSH, [$name, $handler, $opts]);
+
+        // get handler type
+        if (is_string($handler)) {
+            if (function_exists($handler)) {
+                $opts['type'] = self::HANDLER_FUNC;
+            } elseif (class_exists($handler) && is_subclass_of($handler, JobInterface::class)) {
+                $handler = new $handler;
+                $opts['type'] = self::HANDLER_JOB;
+            } elseif (class_exists($handler) && method_exists($handler, '__invoke')) {
+                $handler = new $handler;
+                $opts['type'] = self::HANDLER_INVOKE;
+            } else {
+                throw new \InvalidArgumentException(sprintf(
+                    "The job(%s) handler(%s) must be is a function name or a class implement the '__invoke()' or a class implement the interface %s",
+                    $name,
+                    $handler,
+                    JobInterface::class
+                ));
+            }
+        } elseif ($handler instanceof \Closure) {
+            $opts['type'] = self::HANDLER_CLOSURE;
+        } elseif ($handler instanceof JobInterface) {
+            $opts['type'] = self::HANDLER_JOB;
+        } elseif (method_exists($handler, '__invoke')) {
+            $opts['type'] = self::HANDLER_INVOKE;
+        } else {
+            throw new \InvalidArgumentException(sprintf(
+                'The job [%s] handler [%s] must instance of the interface %s',
+                $name,
+                get_class($handler),
+                JobInterface::class
+            ));
+        }
+
+        // init opts
+        $opts = array_merge(self::$defaultJobOpt, $this->getJobOpts($name), $opts);
+        $opts['focus_on'] = (bool)$opts['focus_on'];
+
+        if (!$opts['focus_on']) {
+            $minCount = max($this->doAllWorkerNum, 1);
+
+            if ($opts['worker_num'] > 0) {
+                $minCount = max($opts['worker_num'], $this->doAllWorkerNum);
+            }
+
+            $opts['worker_num'] = $minCount;
+        } else {
+            $opts['worker_num'] = $opts['worker_num'] < 0 ? 0 : (int)$opts['worker_num'];
+        }
+
+        $this->setJobOpts($name, $opts);
+        $this->handlers[$name] = $handler;
+
+        $this->trigger(self::EVENT_AFTER_PUSH, [$name, $handler, $opts]);
+
+        return true;
+    }
+
+    /**
      * Starts a worker for the PECL library
      *
      * @param   array $jobs List of worker functions to add
