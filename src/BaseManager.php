@@ -6,8 +6,6 @@
  * Time: 下午9:30
  */
 
-// declare(ticks=1); 更换为使用 pcntl_signal_dispatch(), 性能更好
-
 namespace inhere\gearman;
 
 use inhere\gearman\jobs\JobInterface;
@@ -22,23 +20,9 @@ abstract class BaseManager implements ManagerInterface
 {
     use traits\EventTrait;
     use traits\LogTrait;
+    use traits\OptionAndConfigTrait;
     use traits\ProcessControlTrait;
-    use traits\WorkerTrait;
-
-    /**
-     * @var string
-     */
-    private $fullScript;
-
-    /**
-     * @var string
-     */
-    private $script;
-
-    /**
-     * @var string
-     */
-    private $command;
+    use traits\ProcessManageTrait;
 
     /**
      * @var string
@@ -50,39 +34,6 @@ abstract class BaseManager implements ManagerInterface
      * @var int
      */
     protected $verbose = 4;
-
-    ///////// process control //////////
-
-    /**
-     * The PID of the current running process. Set for parent and child processes
-     */
-    protected $pid = 0;
-
-    /**
-     * The PID of the parent(master) process, when running in the forked helper,worker.
-     */
-    protected $masterPid = 0;
-
-    /**
-     * @var bool
-     */
-    protected $isMaster = false;
-
-    /**
-     * @var bool
-     */
-    protected $isWorker = false;
-
-    /**
-     * @var string
-     */
-    protected $pidFile;
-
-    /**
-     * When true, workers will stop look for jobs and the parent process will kill off all running workers
-     * @var boolean
-     */
-    protected $stopWork = false;
 
     ///////// jobs //////////
 
@@ -222,245 +173,12 @@ abstract class BaseManager implements ManagerInterface
      */
     protected function init()
     {
-        // handleCommandAndConfig
-        $this->handleCommandAndConfig();
-    }
-
-    /**
-     * handle CLI command and load options
-     * @return bool
-     */
-    protected function handleCommandAndConfig()
-    {
-        $result = Helper::parseParameters([
-            'd', 'daemon', 'w', 'watch', 'h', 'help', 'V', 'version', 'no-test', 'watch-status'
-        ]);
-        $this->fullScript = implode(' ', $GLOBALS['argv']);
-        $this->script = strpos($result[0], '.php') ? "php {$result[0]}" : $result[0];
-        $this->command = $command = isset($result[1]) ? $result[1] : 'start';
-        unset($result[0], $result[1]);
-
-        $supported = ['start', 'stop', 'restart', 'reload', 'status'];
-
-        if (!in_array($command, $supported, true)) {
-            $this->showHelp("The command [{$command}] is don't supported!");
-        }
-
-        // load CLI Options
-        $this->loadCliOptions($result);
-
-        // init Config And Properties
-        $this->initConfigAndProperties($this->config);
-
-        // Debug option to dump the config and exit
-        if (isset($result['D']) || isset($result['dump'])) {
-            $val = isset($result['D']) ? $result['D'] : (isset($result['dump']) ? $result['dump'] : '');
-            $this->dumpInfo($val === 'all');
-        }
+        $this->parseCommandAndConfig();
 
         // checkEnvironment
         $this->checkEnvironment();
 
-        $masterPid = $this->getPidFromFile($this->pidFile);
-        $isRunning = $this->isRunning($masterPid);
-
-        // start: do Start Server
-        if ($command === 'start') {
-            // check master process is running
-            if ($isRunning) {
-                $this->stderr("The worker manager has been running. (PID:{$masterPid})\n", true, -__LINE__);
-            }
-
-            return true;
-        }
-
-        // check master process
-        if (!$isRunning) {
-            $this->stderr("The worker manager is not running. can not execute the command: {$command}\n", true, -__LINE__);
-        }
-
-        // switch command
-        switch ($command) {
-            case 'stop':
-            case 'restart':
-                // stop: stop and exit. restart: stop and start
-                $this->stopMaster($masterPid, $command === 'stop');
-                break;
-            case 'reload':
-                // reload workers
-                $this->reloadWorkers($masterPid);
-                break;
-            case 'status':
-                $cmd = isset($result['cmd']) ? $result['cmd'] : 'status';
-                $this->showStatus($cmd, isset($result['watch-status']));
-                break;
-            default:
-                $this->showHelp("The command [{$command}] is don't supported!");
-                break;
-        }
-
-        return true;
-    }
-
-    /**
-     * load the command line options
-     * @param array $opts
-     */
-    protected function loadCliOptions(array $opts)
-    {
-        $map = [
-            'c' => 'conf_file',   // config file
-            's' => 'servers', // server address
-
-            'n' => 'worker_num',  // worker number do all jobs
-            'u' => 'user',
-            'g' => 'group',
-
-            'l' => 'log_file',
-            'p' => 'pid_file',
-
-            'r' => 'max_run_jobs', // max run jobs for a worker
-            'x' => 'max_lifetime',// max lifetime for a worker
-            't' => 'timeout',
-        ];
-
-        // show help
-        if (isset($opts['h']) || isset($opts['help'])) {
-            $this->showHelp();
-        }
-        // show version
-        if (isset($opts['V']) || isset($opts['version'])) {
-            $this->showVersion();
-        }
-
-        // load opts values to config
-        foreach ($map as $k => $v) {
-            if (isset($opts[$k]) && $opts[$k]) {
-                $this->config[$v] = $opts[$k];
-            }
-        }
-
-        // load Custom Config File
-        if ($file = $this->config['conf_file']) {
-            if (!file_exists($file)) {
-                $this->showHelp("Custom config file {$file} not found.");
-            }
-
-            $config = require $file;
-            $this->setConfig($config);
-        }
-
-        // watch modify
-        if (isset($opts['w']) || isset($opts['watch'])) {
-            $this->config['watch_modify'] = $opts['w'];
-        }
-
-        // run as daemon
-        if (isset($opts['d']) || isset($opts['daemon'])) {
-            $this->config['daemon'] = true;
-        }
-
-        // no test
-        if (isset($opts['no-test'])) {
-            $this->config['no_test'] = true;
-        }
-
-        // only added jobs
-        if (isset($opts['jobs']) && ($added = trim($opts['jobs'], ','))) {
-            $this->config['added_jobs'] = strpos($added, ',') ? explode(',', $added) : [$added];
-        }
-
-        if (isset($opts['v'])) {
-            $opts['v'] = $opts['v'] === true ? '' : $opts['v'];
-
-            switch ($opts['v']) {
-                case '':
-                    $this->config['log_level'] = self::LOG_INFO;
-                    break;
-                case 'v':
-                    $this->config['log_level'] = self::LOG_PROC_INFO;
-                    break;
-                case 'vv':
-                    $this->config['log_level'] = self::LOG_WORKER_INFO;
-                    break;
-                case 'vvv':
-                    $this->config['log_level'] = self::LOG_DEBUG;
-                    break;
-                case 'vvvv':
-                    $this->config['log_level'] = self::LOG_CRAZY;
-                    break;
-                default:
-                    // $this->config['log_level'] = self::LOG_INFO;
-                    break;
-            }
-        }
-    }
-
-    /**
-     * @param array $config
-     */
-    protected function initConfigAndProperties(array $config)
-    {
-        // init config attributes
-
-        $this->config['daemon'] = (bool)$config['daemon'];
-        $this->config['pid_file'] = trim($config['pid_file']);
-        $this->config['worker_num'] = (int)$config['worker_num'];
-        $this->config['servers'] = str_replace(' ', '', $config['servers']);
-
-        $this->config['log_level'] = (int)$config['log_level'];
-        $logFile = trim($config['log_file']);
-
-        if ($logFile === 'syslog') {
-            $this->config['log_syslog'] = true;
-            $this->config['log_file'] = '';
-        } else {
-            $this->config['log_file'] = $logFile;
-        }
-
-        $this->config['timeout'] = (int)$config['timeout'];
-        $this->config['max_lifetime'] = (int)$config['max_lifetime'];
-        $this->config['max_run_jobs'] = (int)$config['max_run_jobs'];
-        $this->config['restart_splay'] = (int)$config['restart_splay'];
-
-        $this->config['user'] = trim($config['user']);
-        $this->config['group'] = trim($config['group']);
-
-        // config value fix ... ...
-
-        if ($this->config['worker_num'] <= 0) {
-            $this->config['worker_num'] = self::WORKER_NUM;
-        }
-
-        if ($this->config['max_lifetime'] < self::MIN_LIFETIME) {
-            $this->config['max_lifetime'] = self::MAX_LIFETIME;
-        }
-
-        if ($this->config['max_run_jobs'] < self::MIN_RUN_JOBS) {
-            $this->config['max_run_jobs'] = self::MAX_RUN_JOBS;
-        }
-
-        if ($this->config['restart_splay'] <= 100) {
-            $this->config['restart_splay'] = self::RESTART_SPLAY;
-        }
-
-        if ($this->config['timeout'] <= self::MIN_JOB_TIMEOUT) {
-            $this->config['timeout'] = self::JOB_TIMEOUT;
-        }
-
-        if ($this->config['watch_modify_interval'] <= self::MIN_WATCH_INTERVAL) {
-            $this->config['watch_modify_interval'] = self::WATCH_INTERVAL;
-        }
-
-        // init properties
-
-        $this->name = trim($config['name']) ?: substr(md5(microtime()), 0, 7);
-        $this->doAllWorkerNum = $this->config['worker_num'];
-        $this->maxLifetime = $this->config['max_lifetime'];
-        $this->verbose = $this->config['log_level'];
-        $this->pidFile = $this->config['pid_file'];
-
-        unset($config);
+        $this->dispatchCommand($this->command);
     }
 
 //////////////////////////////////////////////////////////////////////
@@ -468,8 +186,7 @@ abstract class BaseManager implements ManagerInterface
 //////////////////////////////////////////////////////////////////////
 
     protected function beforeStart()
-    {
-    }
+    {}
 
     /**
      * do start run manager
@@ -533,7 +250,6 @@ abstract class BaseManager implements ManagerInterface
         }
 
         $this->log("Manager stopped\n", self::LOG_PROC_INFO);
-
         $this->quit();
     }
 
@@ -841,45 +557,6 @@ EOF;
     }
 
     /**
-     * savePidFile
-     */
-    protected function savePidFile()
-    {
-        if ($this->pidFile && !file_put_contents($this->pidFile, $this->pid)) {
-            $this->showHelp("Unable to write PID to the file {$this->pidFile}");
-        }
-    }
-
-    /**
-     * delete pidFile
-     */
-    protected function delPidFile()
-    {
-        if ($this->pidFile && file_exists($this->pidFile) && !unlink($this->pidFile)) {
-            $this->log("Could not delete PID file: {$this->pidFile}", self::LOG_WARN);
-        }
-    }
-
-    /**
-     * mark stopWork
-     */
-    protected function stopWork()
-    {
-        //if ()
-        $this->stopWork = true;
-        $this->meta['stop_time'] = time();
-    }
-
-    /**
-     * exit
-     * @param int $code
-     */
-    protected function quit($code = 0)
-    {
-        exit((int)$code);
-    }
-
-    /**
      * checkEnvironment
      */
     protected function checkEnvironment()
@@ -914,41 +591,9 @@ EOF;
     /**
      * @return array
      */
-    public static function getLevels()
-    {
-        return self::$levels;
-    }
-
-    /**
-     * @return array
-     */
     public static function getDefaultJobOpt()
     {
         return self::$defaultJobOpt;
-    }
-
-    /**
-     * @return string
-     */
-    public function getFullScript()
-    {
-        return $this->fullScript;
-    }
-
-    /**
-     * @return string
-     */
-    public function getScript()
-    {
-        return $this->script;
-    }
-
-    /**
-     * @return string
-     */
-    public function getCommand()
-    {
-        return $this->command;
     }
 
     /**
@@ -997,30 +642,6 @@ EOF;
     public function get($name, $default = null)
     {
         return isset($this->config[$name]) ? $this->config[$name] : $default;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getPid()
-    {
-        return $this->pid;
-    }
-
-    /**
-     * @return string
-     */
-    public function getPidFile()
-    {
-        return $this->pidFile;
-    }
-
-    /**
-     * @return string
-     */
-    public function getPidRole()
-    {
-        return $this->isMaster ? 'Master' : 'Worker';
     }
 
     /**
