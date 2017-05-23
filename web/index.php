@@ -19,6 +19,7 @@ $wph = new WebPanelHandler([
 
 $wph->setRoutes([
     'home' => 'index',
+    'proj-info' => 'projInfo',
     'server-info' => 'serverInfo',
     'log-info' => 'logInfo',
 ]);

@@ -6,11 +6,12 @@
         content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Gearman worker and job information</title>
-
   <!-- Add this to <head> -->
   <link type="text/css" rel="stylesheet" href="/assets/css/bootstrap.min.css">
   <link type="text/css" rel="stylesheet" href="/assets/css/bootstrap-vue.css"/>
   <link type="text/css" rel="stylesheet" href="/assets/css/gwm.css"/>
+  <script src="/assets/lib/vue.min.js"></script>
+  <script src="/assets/lib/axios.min.js"></script>
 </head>
 <body>
   <div id="app" class="app-wrapper">
@@ -18,16 +19,18 @@
 
     <div class="container" :class="{active: '1'}">
       <!--<b-breadcrumb :items="['Home','Posts','Another story']" />-->
+      <transition name="fade">
       <router-view></router-view>
+      </transition>
     </div>
-    <app-footer></app-footer>
+    <app-footer :projInfo="projInfo"></app-footer>
   </div>
 
 <!-- Add this after vue.js -->
 <script src="/assets/lib/vue.min.js"></script>
+<script src="/assets/lib/axios.min.js"></script>
 <script src="/assets/lib/polyfill.min.js"></script>
 <script src="/assets/lib/tether.min.js"></script>
-<script src="/assets/lib/axios.min.js"></script>
 <script src="/assets/lib/bootstrap-vue.js"></script>
 <script src="/assets/lib/vue-router.min.js"></script>
 
@@ -46,6 +49,7 @@
     <b-btn variant="primary" href="https://github.com/inhere/php-gearman-manager">Github</b-btn>
   </b-jumbotron>
 </script>
+
 <script type="text/x-template" id="page-server-info">
   <b-card
     :inverse="false"
@@ -199,19 +203,19 @@
     </b-navbar>
   </header>
 </script>
-  <script type="text/x-template" id="app-footer">
-    <footer class="bd-footer text-muted">
-      <div class="container">
-      <ul class="bd-footer-links">
-      <li><a href="/" class="nuxt-link-active">Home</a></li>
-      <li><a href="https://github.com/inhere/php-gearman-manager" target="_blank">GitHub</a></li>
-      </ul>
-      <p>
-      welcome
-      </p>
-      </div>
-      </footer>
-  </script>
+<script type="text/x-template" id="app-footer">
+  <footer class="bd-footer text-muted" v-if="projInfo.length">
+    <div class="container">
+    <ul class="bd-footer-links">
+    <li><a href="/" class="nuxt-link-active">Home</a></li>
+    <li><a :href="projInfo.github" target="_blank">GitHub</a></li>
+    </ul>
+    <p>
+    welcome
+    </p>
+    </div>
+    </footer>
+</script>
 
 <script src="/assets/js/gwm.js"></script>
 </body>
