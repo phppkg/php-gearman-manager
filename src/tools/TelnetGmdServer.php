@@ -45,7 +45,7 @@ class TelnetGmdServer extends Telnet
 
     /**
      * get status information
-     * @return array|null
+     * @return array
      */
     public function statusInfo()
     {
@@ -58,11 +58,11 @@ class TelnetGmdServer extends Telnet
         $status = $this->command('status');
 
         if (!($status = trim($status, ".\n")) || 0 === strpos($status, 'ERR')) {
-            return null;
+            return [];
         }
 
         if (!$rows = explode("\n", $status)) {
-            return null;
+            return [];
         }
 
         $data = [];
@@ -83,7 +83,7 @@ class TelnetGmdServer extends Telnet
 
     /**
      * get workers information
-     * @return array|null
+     * @return array
      */
     public function workersInfo()
     {
@@ -96,11 +96,11 @@ class TelnetGmdServer extends Telnet
         $workers = $this->command('workers');
 
         if (!($workers = trim($workers, ".\n")) || 0 === strpos($workers, 'ERR')) {
-            return null;
+            return [];
         }
 
         if (!$rows = explode("\n", $workers)) {
-            return null;
+            return [];
         }
 
         $data = [];

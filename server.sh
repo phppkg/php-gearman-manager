@@ -1,2 +1,4 @@
-#!/bin/sh
-php -S 127.0.0.1:5888 -t web > server.log
+#!/bin/bash
+SVR=127.0.0.1:5888
+echo "listen on $SVR"
+php -S $SVR -t web > server.log

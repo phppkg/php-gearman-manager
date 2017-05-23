@@ -14,11 +14,18 @@ const routes = [{
   path: '/server-info',
   component: {
     template: '#page-server-info',
-    // created () {
-    // },
+    created () {
+      console.log('created')
+    },
+    mounted () {
+      console.log('mounted')
+      // this.$nextTick(() => {
+      //   this.fetch()
+      // })
+    },
     updated () {
       console.log('vm updated')
-      this.loadPlugin()
+      // this.loadPlugin()
     },
     data: function () {
       return {
@@ -37,6 +44,8 @@ const routes = [{
           server: {label: "Server"},
           job_names: {label: "Job list of the worker"}
         },
+        tmpSvr: {name: '', address: ''},
+        svrAry: [{name: 'local', address: '127.0.0.1:4730'}],
         servers: [],
         serversFields: {
           index: {label: "Index", sortable: true },
@@ -53,6 +62,68 @@ const routes = [{
         tabIndex: null,
         svrFilter: null
       }
+    },
+    methods: {
+      fetch (servers) {
+        const self = this
+
+        axios.get('/',{
+          params: {
+            r: 'server-info',
+            servers: JSON.stringify(servers)
+          }
+        })
+          .then(({data, status}) => {
+            console.log(data)
+
+            if (data.code !== 0) {
+              vm.alert(data.msg ? data.msg : 'network error!')
+              return
+            }
+
+            self.servers = data.data.servers
+            self.statusInfo = data.data.statusInfo
+            self.workersInfo = data.data.workersInfo
+        })
+          .catch(err => {
+            console.error(err)
+        })
+      },
+      addServer () {
+        if (!this.tmpSvr.name || !this.tmpSvr.address) {
+          vm.alert('Please input server name and address')
+          return
+        }
+        this.svrAry.push(this.tmpSvr)
+        this.tmpSvr = {name: '', address: ''}
+      },
+      delServer(index) {
+        this.svrAry.splice(index, 1)
+      },
+      getServerInfo () {
+        if (!this.svrAry.length) {
+          vm.alert('Please less add a server info')
+          return
+        }
+
+        this.fetch(this.svrAry)
+      }
+    }
+  }
+}, {
+  path: '/log-info',
+  template: '#page-log-info',
+  data: function () {
+    return {
+
+    }
+  },
+  methods: {
+    fetch() {
+
+    },
+    fetchDetail() {
+
     }
   }
 }, {
@@ -76,7 +147,9 @@ const vm = new Vue({
     }
   },
   data: {
-    projInfo: {}
+    projInfo: null,
+    showAlert: false,
+    alertText: '',
   },
   created () {
     this.fetch()
@@ -87,8 +160,12 @@ const vm = new Vue({
     // })
   },
   methods: {
+    alert (msg) {
+      this.showAlert = true
+      this.alertText = msg
+    },
     details(item) {
-      alert(JSON.stringify(item));
+      alert(JSON.stringify(item))
     },
     fetch () {
       const self = this

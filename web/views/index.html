@@ -16,19 +16,19 @@
 <body>
   <div id="app" class="app-wrapper">
     <app-header></app-header>
-
-    <div class="container" :class="{active: '1'}">
+    <b-alert variant="danger" dismissible :show="showAlert" @dismissed="showAlert=false">
+      {{ alertText }}
+    </b-alert>
+    <div class="container app-body" :class="{active: '1'}">
       <!--<b-breadcrumb :items="['Home','Posts','Another story']" />-->
-      <transition name="fade">
-      <router-view></router-view>
+      <transition name="slide-fade" mode="out-in">
+        <router-view></router-view>
       </transition>
     </div>
     <app-footer :projInfo="projInfo"></app-footer>
   </div>
 
 <!-- Add this after vue.js -->
-<script src="/assets/lib/vue.min.js"></script>
-<script src="/assets/lib/axios.min.js"></script>
 <script src="/assets/lib/polyfill.min.js"></script>
 <script src="/assets/lib/tether.min.js"></script>
 <script src="/assets/lib/bootstrap-vue.js"></script>
@@ -36,18 +36,22 @@
 
 <!-- vue components -->
 <script type="text/x-template" id="page-home">
-  <b-jumbotron
-    header="Php-gwm"
-    lead="gearman worker manager of the php"
-  >
-    <p>
-      Can start and manage multiple gearman worker, you can set the maximum execution time of
-      each worker and the maximum number of job execution, after reaching the set value.
-      Worker will automatically restart the process, prevent the dead
-    </p>
-    <p>For more information visit website</p>
-    <b-btn variant="primary" href="https://github.com/inhere/php-gearman-manager">Github</b-btn>
-  </b-jumbotron>
+  <div class="row">
+    <div class="col-12">
+      <b-jumbotron
+        header="Php-gwm"
+        lead="gearman worker manager of the php"
+      >
+        <p>
+          Can start and manage multiple gearman worker, you can set the maximum execution time of
+          each worker and the maximum number of job execution, after reaching the set value.
+          Worker will automatically restart the process, prevent the dead
+        </p>
+        <p>For more information visit website</p>
+        <b-btn variant="primary" href="https://github.com/inhere/php-gearman-manager">Github</b-btn>
+      </b-jumbotron>
+    </div>
+  </div>
 </script>
 
 <script type="text/x-template" id="page-server-info">
@@ -57,6 +61,34 @@
     header="Gearmand servers information"
     variant="default"
   >
+    <div class="row">
+      <b-input-group left="Add server">
+        <b-form-input v-model="tmpSvr.name" placeholder="name(eg test)"></b-form-input>
+        <b-form-input v-model="tmpSvr.address" placeholder="address(eg 127.0.0.1:4730)"></b-form-input>
+
+        <!-- Attach Right button -->
+        <b-input-group-button slot="right">
+        <b-button size="" variant="outline-success" @click="addServer">
+          +
+        </b-button>
+        </b-input-group-button>
+
+      </b-input-group>
+    </div>
+
+    <div class="row my-1">
+      <ol>
+        <li v-for="(svr,index) in svrAry">
+          {{ svr.name }} <code>{{ svr.address }}</code> <a class="btn btn-sm badge text-danger badge-pill" @click="delServer(index)">X</a>
+        </li>
+      </ol>
+    </div>
+    <div class="justify-content-center my-1 row">
+      <b-button size="" variant="success" @click="getServerInfo">
+        Fetch Server Info
+      </b-button>
+    </div>
+    <hr>
     <div class="justify-content-center my-1 row">
       <b-form-fieldset horizontal label="Filter" class="col-6" :label-size="2">
         <b-form-input v-model="svrFilter" placeholder="Type to Search"></b-form-input>
@@ -174,29 +206,13 @@
         <b-collapse is-nav id="nav_collapse">
 
           <b-nav is-nav-bar>
-            <b-nav-item to="/">Home</b-nav-item>
-            <b-nav-item to="/server-info">Server info</b-nav-item>
-            <b-nav-item>Contact Us</b-nav-item>
+            <b-nav-item to="/home">Home</b-nav-item>
+            <b-nav-item to="/server-info">Server Info</b-nav-item>
+            <b-nav-item to="/log-info">Log Parse</b-nav-item>
           </b-nav>
 
           <b-nav is-nav-bar class="ml-auto">
-
-            <!-- Navbar dropdowns -->
-            <!--  <b-nav-item-dropdown text="Lang" right-alignment>
-               <b-dropdown-item to="#">EN</b-dropdown-item>
-               <b-dropdown-item to="#">ZH-CN</b-dropdown-item>
-             </b-nav-item-dropdown> -->
-
-            <!-- <b-nav-item-dropdown right-alignment>
-
-              <template slot="text">
-                <span style="font-weight: bold;">User</span>
-              </template>
-
-              <b-dropdown-item to="#">Profile</b-dropdown-item>
-              <b-dropdown-item to="#">Signout</b-dropdown-item>
-            </b-nav-item-dropdown> -->
-
+            <b-nav-item>Contact Us</b-nav-item>
           </b-nav>
         </b-collapse>
       </div>
@@ -204,7 +220,7 @@
   </header>
 </script>
 <script type="text/x-template" id="app-footer">
-  <footer class="bd-footer text-muted" v-if="projInfo.length">
+  <footer class="bd-footer text-muted" v-if="projInfo">
     <div class="container">
     <ul class="bd-footer-links">
     <li><a href="/" class="nuxt-link-active">Home</a></li>

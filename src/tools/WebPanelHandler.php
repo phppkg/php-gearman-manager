@@ -17,44 +17,79 @@ use inhere\gearman\BaseManager;
  */
 class WebPanelHandler
 {
+    /**
+     * @var array
+     */
     private $routes = [];
 
+    /**
+     * @var array
+     */
     private $config = [
         'basePath' => '',
         'logPath' => '',
         'logFileName' => 'manager_%s.log',
     ];
 
+    /**
+     * WebPanelHandler constructor.
+     * @param array $config
+     */
     public function __construct(array $config = [])
     {
         $this->config = array_merge($this->config, $config);
     }
 
+    /**
+     * @param $name
+     * @param null $default
+     * @return mixed
+     */
     public function get($name, $default = null)
     {
         return Helper::get($name, $default);
     }
 
+    /**
+     * @param $name
+     * @param null $default
+     * @return mixed
+     */
     public function getServerValue($name, $default = null)
     {
         return Helper::getServerValue($name, $default);
     }
 
+    /**
+     * @param $view
+     * @param array $data
+     */
     protected function render($view, array $data = [])
     {
         Helper::render($this->config['basePath'] . $view, $data);
     }
 
+    /**
+     * @param array $data
+     * @param int $code
+     * @param string $msg
+     */
     protected function outJson(array $data = [], $code = 0, $msg = 'successful')
     {
         Helper::outJson($data, $code, $msg);
     }
 
+    /**
+     * @param array $routes
+     */
     public function setRoutes(array $routes)
     {
         $this->routes = $routes;
     }
 
+    /**
+     * @param string $route
+     */
     public function dispatch($route)
     {
         $method = 'indexAction';
@@ -66,6 +101,9 @@ class WebPanelHandler
         $this->$method();
     }
 
+    /**
+     * index
+     */
     public function indexAction()
     {
         $this->render('/views/index.html');
@@ -89,7 +127,7 @@ class WebPanelHandler
         }
 
         $monitor = new Monitor([
-            'servers' => $servers,
+            'servers' => json_decode($servers, true),
     //       'servers' => [
     //           [
     //               'name' => 'test',
@@ -113,10 +151,10 @@ class WebPanelHandler
     {
         $date = $this->get('date', date('Y-m-d'));
 
-        $realName = sprintf('manager_%s.log', $date);
-        $file = ROOT_PATH . '/examples/logs/' . $realName;
+        $realName = sprintf($this->config['logFileName'], $date);
+        $file = $this->config['logPath']. $realName;
 
-        $lp = new \inhere\gearman\tools\LogParser($file);
+        $lp = new LogParser($file);
 
         var_dump($lp->getWorkerStartTimes(),$lp->getTypeCounts(),$lp->getJobsInfo(),$lp->getJobDetail('H:afa64bc05a60:2'));
     }

@@ -254,7 +254,7 @@ class Monitor
                 $gmd->close();
                 unset($gmd);
 
-                foreach ($status as $row) {
+                foreach ((array)$status as $row) {
                     if (strlen($this->_filterName) == 0 || stripos($row['job_name'], $this->_filterName) !== false) {
                         $row['name'] = $this->_groupby === self::GROUP_SERVER ? '+' : $row['job_name'];
                         $row['server'] = $this->_groupby === self::GROUP_NAME ? '+' : $server['name'];

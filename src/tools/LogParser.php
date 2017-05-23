@@ -28,12 +28,20 @@ class LogParser
         'cacheDir' => '',
     ];
 
+    /**
+     * @var array
+     */
     private static $typeKeywordMap  = [
         'started'   => 'Starting job',  // started jobs
         'completed' => 'been completed',     // completed jobs
         'failed'    => 'Failed to do',        // Failed jobs
     ];
 
+    /**
+     * LogParser constructor.
+     * @param $file
+     * @param array $config
+     */
     public function __construct($file, array $config = [])
     {
         if (!is_file($file)) {
@@ -45,7 +53,6 @@ class LogParser
     }
 
     /**
-     * @param string $type
      * @return array
      */
     public function getJobsInfo()
