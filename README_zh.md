@@ -73,7 +73,7 @@ php examples/gwm.php -D
 
 运行截图：
 
-![](monitor/assets/cli-ps-status.png)
+![](web/assets/cli-ps-status.png)
 
 ## 命令以及选项说明
 
@@ -302,12 +302,12 @@ class UserAfterRegisterJob extends RequestProxyJob
 在项目目录执行：
 
 ```bash
- php -S 127.0.0.1:5888 -t monitor
+ php -S 127.0.0.1:5888 -t web
 ```
 
 然后打开浏览器访问 http://127.0.0.1:5888 效果：
 
-![](monitor/assets/preview.png)
+![](web/assets/preview.png)
 
 ## License
 

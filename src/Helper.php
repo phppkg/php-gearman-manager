@@ -163,6 +163,16 @@ class Helper
     }
 
     /**
+     * @param $name
+     * @param null $default
+     * @return mixed
+     */
+    public static function getServerValue($name, $default = null)
+    {
+        return isset($_SERVER[$name]) ? $_SERVER[$name]: $default;
+    }
+
+    /**
      * @param string $view
      * @param array $data
      * @param bool $quit
