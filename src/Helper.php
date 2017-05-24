@@ -37,7 +37,7 @@ class Helper
      * @param array $noOpts List of parameters without values
      * @return array
      */
-    public static function parseParameters($noOpts = [])
+    public static function parseOptArgs($noOpts = [])
     {
         $result = [];
         $params = $GLOBALS['argv'];

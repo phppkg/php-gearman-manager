@@ -36,7 +36,6 @@ trait OptionAndConfigTrait
      */
     private $cliOpts = [];
 
-
     /**
      * handle CLI command and load options
      */
@@ -58,8 +57,8 @@ trait OptionAndConfigTrait
         $this->initConfigAndProperties($this->config);
 
         // Debug option to dump the config and exit
-        if (isset($result['D']) || isset($result['dump'])) {
-            $val = isset($result['D']) ? $result['D'] : (isset($result['dump']) ? $result['dump'] : '');
+        if (isset($this->cliOpts['D']) || isset($this->cliOpts['dump'])) {
+            $val = isset($this->cliOpts['D']) ? $this->cliOpts['D'] : (isset($this->cliOpts['dump']) ? $this->cliOpts['dump'] : '');
             $this->dumpInfo($val === 'all');
         }
     }
@@ -69,16 +68,17 @@ trait OptionAndConfigTrait
      */
     protected function parseCliOptions()
     {
-        $result = Helper::parseParameters([
-            'd', 'daemon', 'w', 'watch', 'h', 'help', 'V', 'version', 'no-test', 'watch-status'
-        ]);
+        if (!$this->cliOpts) {
+            $this->cliOpts = Helper::parseOptArgs([
+                'd', 'daemon', 'w', 'watch', 'h', 'help', 'V', 'version', 'no-test', 'watch-status'
+            ]);
+        }
+
         $this->fullScript = implode(' ', $GLOBALS['argv']);
-        $this->script = strpos($result[0], '.php') ? "php {$result[0]}" : $result[0];
-        $this->command = $command = isset($result[1]) ? $result[1] : 'start';
+        $this->script = strpos($this->cliOpts[0], '.php') ? "php {$this->cliOpts[0]}" : $this->cliOpts[0];
+        $this->command = $command = isset($this->cliOpts[1]) ? $this->cliOpts[1] : 'start';
 
-        unset($result[0], $result[1]);
-
-        $this->cliOpts = $result;
+        unset($this->cliOpts[0], $this->cliOpts[1]);
     }
 
     /**
@@ -311,5 +311,22 @@ trait OptionAndConfigTrait
     public function getCommand()
     {
         return $this->command;
+    }
+
+    /**
+     * setCliOpts
+     * @param array $opts
+     */
+    public function setCliOpts(array $opts)
+    {
+        $this->cliOpts = $opts;
+    }
+
+    /**
+     * @return array
+     */
+    public function getCliOpts()
+    {
+        return $this->cliOpts;
     }
 }

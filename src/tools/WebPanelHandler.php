@@ -101,6 +101,10 @@ class WebPanelHandler
         $this->$method();
     }
 
+/////////////////////////////////////////////////////////////////////
+/// actions
+/////////////////////////////////////////////////////////////////////
+
     /**
      * index
      */
@@ -151,11 +155,40 @@ class WebPanelHandler
     {
         $date = $this->get('date', date('Y-m-d'));
 
+        if (!$date) {
+            $this->outJson([], __LINE__, 'Please provide the date to want see log!');
+        }
+
         $realName = sprintf($this->config['logFileName'], $date);
         $file = $this->config['logPath']. $realName;
 
         $lp = new LogParser($file);
 
-        var_dump($lp->getWorkerStartTimes(),$lp->getTypeCounts(),$lp->getJobsInfo(),$lp->getJobDetail('H:afa64bc05a60:2'));
+        // var_dump($lp->getWorkerStartTimes(),$lp->getTypeCounts(),$lp->getJobsInfo());
+
+        $this->outJson([
+            'startTimes' => $lp->getWorkerStartTimes(),
+            'typeCounts' => $lp->getTypeCounts(),
+            'jobsInfo' => $lp->getJobsInfo(),
+        ]);
+    }
+
+    public function jobDetailAction()
+    {
+        $date = $this->get('date', date('Y-m-d'));
+        $jobId = $this->get('jobId');
+
+        if (!$date || !$jobId) {
+            $this->outJson([], __LINE__, 'Please provide the date and jobId!');
+        }
+
+        $realName = sprintf($this->config['logFileName'], $date);
+        $file = $this->config['logPath']. $realName;
+
+        $lp = new LogParser($file);
+
+        $this->outJson([
+            'detail' => $lp->getJobDetail($jobId)
+        ]);
     }
 }

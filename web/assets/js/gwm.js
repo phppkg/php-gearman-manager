@@ -7,125 +7,13 @@ Vue.config.devtools = true
 
 const routes = [{
   path: '/home',
-  component: {
-    template: '#page-home'
-  }
+  component: components.pageHome
 }, {
   path: '/server-info',
-  component: {
-    template: '#page-server-info',
-    created () {
-      console.log('created')
-    },
-    mounted () {
-      console.log('mounted')
-      // this.$nextTick(() => {
-      //   this.fetch()
-      // })
-    },
-    updated () {
-      console.log('vm updated')
-      // this.loadPlugin()
-    },
-    data: function () {
-      return {
-        statusInfo: [],
-        statusFields: {
-          job_name: {label: "Job name", sortable: true },
-          server: {label: "Server name", sortable: true },
-          in_queue: {label: "in queue"},
-          in_running: {label: "in running"},
-          capable_workers: {label: "capable workers"}
-        },
-        workersInfo: [],
-        workersFields: {
-          id: {label: "ID", sortable: true },
-          ip: {label: "IP"},
-          server: {label: "Server"},
-          job_names: {label: "Job list of the worker"}
-        },
-        tmpSvr: {name: '', address: ''},
-        svrAry: [{name: 'local', address: '127.0.0.1:4730'}],
-        servers: [],
-        serversFields: {
-          index: {label: "Index", sortable: true },
-          name: {label: "Name", sortable: true },
-          address: {label: "Address", },
-          version: {label: "Version", }
-        },
-        stsCurPage: 1,
-        stsPerPage: 10,
-        stsFilter: null,
-        wkrCurPage: 1,
-        wkrPerPage: 10,
-        wkrFilter: null,
-        tabIndex: null,
-        svrFilter: null
-      }
-    },
-    methods: {
-      fetch (servers) {
-        const self = this
-
-        axios.get('/',{
-          params: {
-            r: 'server-info',
-            servers: JSON.stringify(servers)
-          }
-        })
-          .then(({data, status}) => {
-            console.log(data)
-
-            if (data.code !== 0) {
-              vm.alert(data.msg ? data.msg : 'network error!')
-              return
-            }
-
-            self.servers = data.data.servers
-            self.statusInfo = data.data.statusInfo
-            self.workersInfo = data.data.workersInfo
-        })
-          .catch(err => {
-            console.error(err)
-        })
-      },
-      addServer () {
-        if (!this.tmpSvr.name || !this.tmpSvr.address) {
-          vm.alert('Please input server name and address')
-          return
-        }
-        this.svrAry.push(this.tmpSvr)
-        this.tmpSvr = {name: '', address: ''}
-      },
-      delServer(index) {
-        this.svrAry.splice(index, 1)
-      },
-      getServerInfo () {
-        if (!this.svrAry.length) {
-          vm.alert('Please less add a server info')
-          return
-        }
-
-        this.fetch(this.svrAry)
-      }
-    }
-  }
+  component: components.pageServerInfo
 }, {
   path: '/log-info',
-  template: '#page-log-info',
-  data: function () {
-    return {
-
-    }
-  },
-  methods: {
-    fetch() {
-
-    },
-    fetchDetail() {
-
-    }
-  }
+  component: components.pageLogInfo
 }, {
   path: '*',
   redirect: '/home'
@@ -138,26 +26,31 @@ const router = new VueRouter({
 const vm = new Vue({
   router: router,
   components: {
-    'app-header': {
-      template: '#app-header'
-    },
-    'app-footer': {
-      props: ['projInfo'],
-      template: '#app-footer'
-    }
+    'app-header': components.appHeader,
+    'app-footer': components.appFooter
   },
   data: {
-    projInfo: null,
+    projInfo: {
+      github: '',
+      gitosc: '',
+      version: ''
+    },
     showAlert: false,
     alertText: '',
   },
   created () {
+    console.log('VM created')
     this.fetch()
   },
   mounted () {
+    console.log('VM mounted')
     // this.$nextTick(() => {
     //   this.fetch()
     // })
+  },
+  updated () {
+    console.log('VM updated')
+    // this.loadPlugin()
   },
   methods: {
     alert (msg) {
@@ -170,11 +63,7 @@ const vm = new Vue({
     fetch () {
       const self = this
 
-      axios.get('/',{
-        params: {
-          r: 'proj-info'
-        }
-      })
+      axios.get('/?r=proj-info')
       .then(({data, status}) => {
         console.log(data)
         self.projInfo = data.data

@@ -12,6 +12,9 @@
   <link type="text/css" rel="stylesheet" href="/assets/css/gwm.css"/>
   <script src="/assets/lib/vue.min.js"></script>
   <script src="/assets/lib/axios.min.js"></script>
+  <script type="text/javascript">
+    let components = {};
+  </script>
 </head>
 <body>
   <div id="app" class="app-wrapper">
@@ -25,7 +28,7 @@
         <router-view></router-view>
       </transition>
     </div>
-    <app-footer :projInfo="projInfo"></app-footer>
+    <app-footer :proj-info="projInfo"></app-footer>
   </div>
 
 <!-- Add this after vue.js -->
@@ -35,204 +38,13 @@
 <script src="/assets/lib/vue-router.min.js"></script>
 
 <!-- vue components -->
-<script type="text/x-template" id="page-home">
-  <div class="row">
-    <div class="col-12">
-      <b-jumbotron
-        header="Php-gwm"
-        lead="gearman worker manager of the php"
-      >
-        <p>
-          Can start and manage multiple gearman worker, you can set the maximum execution time of
-          each worker and the maximum number of job execution, after reaching the set value.
-          Worker will automatically restart the process, prevent the dead
-        </p>
-        <p>For more information visit website</p>
-        <b-btn variant="primary" href="https://github.com/inhere/php-gearman-manager">Github</b-btn>
-      </b-jumbotron>
-    </div>
-  </div>
-</script>
+<script src="/assets/components/app-header.vue.js"></script>
+<script src="/assets/components/app-footer.vue.js"></script>
+<script src="/assets/components/page-home.vue.js"></script>
+<script src="/assets/components/page-server-info.vue.js"></script>
+<script src="/assets/components/page-log-info.vue.js"></script>
 
-<script type="text/x-template" id="page-server-info">
-  <b-card
-    :inverse="false"
-    class="mb-2"
-    header="Gearmand servers information"
-    variant="default"
-  >
-    <div class="row">
-      <b-input-group left="Add server">
-        <b-form-input v-model="tmpSvr.name" placeholder="name(eg test)"></b-form-input>
-        <b-form-input v-model="tmpSvr.address" placeholder="address(eg 127.0.0.1:4730)"></b-form-input>
-
-        <!-- Attach Right button -->
-        <b-input-group-button slot="right">
-        <b-button size="" variant="outline-success" @click="addServer">
-          +
-        </b-button>
-        </b-input-group-button>
-
-      </b-input-group>
-    </div>
-
-    <div class="row my-1">
-      <ol>
-        <li v-for="(svr,index) in svrAry">
-          {{ svr.name }} <code>{{ svr.address }}</code> <a class="btn btn-sm badge text-danger badge-pill" @click="delServer(index)">X</a>
-        </li>
-      </ol>
-    </div>
-    <div class="justify-content-center my-1 row">
-      <b-button size="" variant="success" @click="getServerInfo">
-        Fetch Server Info
-      </b-button>
-    </div>
-    <hr>
-    <div class="justify-content-center my-1 row">
-      <b-form-fieldset horizontal label="Filter" class="col-6" :label-size="2">
-        <b-form-input v-model="svrFilter" placeholder="Type to Search"></b-form-input>
-      </b-form-fieldset>
-    </div>
-
-    <b-table striped bordered hover
-             :items="servers"
-             :fields="serversFields"
-             :filter="svrFilter">
-      <template slot="address" scope="item">
-        <code>{{item.value}}</code>
-      </template>
-      <template slot="version" scope="item">
-        <code>{{item.value}}</code>
-      </template>
-    </b-table>
-  </b-card>
-
-  <b-card no-block>
-    <b-tabs small pills card ref="tabs" v-model="tabIndex">
-      <b-tab title="Jobs information(Status)">
-        <div class="justify-content-center my-1 row">
-          <b-form-fieldset horizontal label="Filter" class="col-6" :label-size="2">
-            <b-form-input v-model="stsFilter" placeholder="Type to Search"></b-form-input>
-          </b-form-fieldset>
-        </div>
-
-        <b-table small bordered hover
-                 head-variant="success"
-                 :items="statusInfo"
-                 :fields="statusFields"
-                 :current-page="stsCurPage"
-                 :per-page="stsPerPage"
-                 :filter="stsFilter"
-        >
-          <template slot="job_name" scope="item">
-            <span class="badge badge-success">{{item.value}}</span>
-          </template>
-          <template slot="in_queue" scope="item">
-            {{item.value}}
-          </template>
-          <template slot="in_running" scope="item">
-            {{item.value}}
-          </template>
-          <template slot="actions" scope="item">
-            <b-btn size="sm" @click="details(item)">Details</b-btn>
-          </template>
-        </b-table>
-
-        <div class="justify-content-center row my-1">
-          <b-form-fieldset horizontal label="Rows per page" class="col-4" :label-size="7">
-            <b-form-select :options="[{text:10,value:10},{text:15,value:15}]" v-model="stsPerPage">
-            </b-form-select>
-          </b-form-fieldset>
-          <b-form-fieldset horizontal label="Pagination" class="col-8" :label-size="2">
-            <b-pagination size="sm" :total-rows="this.statusInfo.length" :per-page="stsPerPage" v-model="stsCurPage"/>
-          </b-form-fieldset>
-        </div>
-
-      </b-tab>
-      <!-- Workers -->
-      <b-tab title="Workers information">
-        <div class="justify-content-center my-1 row">
-          <b-form-fieldset horizontal label="Filter" class="col-6" :label-size="2">
-            <b-form-input v-model="wkrFilter" placeholder="Type to Search"></b-form-input>
-          </b-form-fieldset>
-        </div>
-
-        <!-- Main table element -->
-        <b-table small bordered hover
-                 head-variant="success"
-                 :items="workersInfo"
-                 :fields="workersFields"
-                 :current-page="wkrCurPage"
-                 :per-page="wkrPerPage"
-                 :filter="wkrFilter"
-        >
-          <template slot="ip" scope="item">
-            <code>{{item.value}}</code>
-          </template>
-          <template slot="job_names" scope="item">
-            <code v-for="name in item.value">{{ name }}</code>
-          </template>
-          <template slot="actions" scope="item">
-            <b-btn size="sm" @click="details(item)">Details</b-btn>
-          </template>
-        </b-table>
-
-        <div class="justify-content-center row my-1">
-          <b-form-fieldset horizontal label="Rows per page" class="col-4" :label-size="7">
-            <b-form-select :options="[{text:10,value:10},{text:15,value:15}]" v-model="wkrPerPage">
-            </b-form-select>
-          </b-form-fieldset>
-          <b-form-fieldset horizontal label="Pagination" class="col-8" :label-size="2">
-            <b-pagination size="sm" :total-rows="this.workersInfo.length" :per-page="wkrPerPage" v-model="wkrCurPage"/>
-          </b-form-fieldset>
-        </div>
-      </b-tab>
-    </b-tabs>
-
-  </b-card>
-</script>
-
-<script type="text/x-template" id="app-header">
-  <header v-once>
-    <b-navbar toggleable type="inverse" variant="success">
-      <div class="container">
-        <b-nav-toggle target="nav_collapse"></b-nav-toggle>
-
-        <b-link class="navbar-brand" to="/">
-          <span>Php-gwm</span>
-        </b-link>
-
-        <b-collapse is-nav id="nav_collapse">
-
-          <b-nav is-nav-bar>
-            <b-nav-item to="/home">Home</b-nav-item>
-            <b-nav-item to="/server-info">Server Info</b-nav-item>
-            <b-nav-item to="/log-info">Log Parse</b-nav-item>
-          </b-nav>
-
-          <b-nav is-nav-bar class="ml-auto">
-            <b-nav-item>Contact Us</b-nav-item>
-          </b-nav>
-        </b-collapse>
-      </div>
-    </b-navbar>
-  </header>
-</script>
-<script type="text/x-template" id="app-footer">
-  <footer class="bd-footer text-muted" v-if="projInfo">
-    <div class="container">
-    <ul class="bd-footer-links">
-    <li><a href="/" class="nuxt-link-active">Home</a></li>
-    <li><a :href="projInfo.github" target="_blank">GitHub</a></li>
-    </ul>
-    <p>
-    welcome
-    </p>
-    </div>
-    </footer>
-</script>
-
+<!-- logic handle -->
 <script src="/assets/js/gwm.js"></script>
 </body>
 </html>
