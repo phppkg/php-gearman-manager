@@ -8,14 +8,12 @@ components.pageServerInfo = {
   >
   <div class="row">
     <b-input-group left="Add server">
-      <b-form-input v-model="tmpSvr.name" placeholder="name(eg test)"></b-form-input>
-      <b-form-input v-model="tmpSvr.address" placeholder="address(eg 127.0.0.1:4730)"></b-form-input>
+      <b-form-input v-model="tmpSvr.name" placeholder="name(eg test)" autocompleted="on"></b-form-input>
+      <b-form-input v-model="tmpSvr.address" placeholder="address(eg 127.0.0.1:4730)" autocompleted="on"></b-form-input>
 
       <!-- Attach Right button -->
       <b-input-group-button slot="right">
-      <b-button size="" variant="outline-success" @click="addServer">
-        +
-      </b-button>
+        <b-button size="" variant="outline-success" @click="addServer"> + </b-button>
       </b-input-group-button>
 
     </b-input-group>
@@ -29,9 +27,7 @@ components.pageServerInfo = {
     </ol>
   </div>
   <div class="justify-content-center my-1 row">
-    <b-button size="" variant="success" @click="getServerInfo">
-      Fetch Server Info
-    </b-button>
+    <b-button size="" variant="success" @click="getServerInfo"> Fetch Data From Remote </b-button>
   </div>
   <hr>
   <div class="justify-content-center my-1 row">
@@ -51,10 +47,10 @@ components.pageServerInfo = {
       <code>{{item.value}}</code>
     </template>
   </b-table>
-</b-card>
 
-<b-card no-block>
-  <b-tabs small pills card ref="tabs" v-model="tabIndex">
+  <hr>
+
+  <b-tabs small pills lazy ref="tabs" v-model="tabIndex">
     <b-tab title="Jobs information(Status)">
       <div class="justify-content-center my-1 row">
         <b-form-fieldset horizontal label="Filter" class="col-6" :label-size="2">
@@ -62,7 +58,7 @@ components.pageServerInfo = {
         </b-form-fieldset>
       </div>
 
-      <b-table small bordered hover
+      <b-table small bordered hover show-empty
                head-variant="success"
                :items="statusInfo"
                :fields="statusFields"
@@ -104,7 +100,7 @@ components.pageServerInfo = {
       </div>
 
       <!-- Main table element -->
-      <b-table small bordered hover
+      <b-table small bordered hover show-empty
                head-variant="success"
                :items="workersInfo"
                :fields="workersFields"
@@ -133,6 +129,7 @@ components.pageServerInfo = {
         </b-form-fieldset>
       </div>
     </b-tab>
+
   </b-tabs>
 
 </b-card>
@@ -189,6 +186,7 @@ components.pageServerInfo = {
   methods: {
     fetch (servers) {
       const self = this
+      vm.alert(false)
 
       axios.get('/?r=server-info',{
         params: {

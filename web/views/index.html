@@ -18,7 +18,8 @@
 </head>
 <body>
   <div id="app" class="app-wrapper">
-    <app-header></app-header>
+    <b-progress striped variant="primary" v-model="progress" :precision="1" style="height: 2px;" v-show="progress"></b-progress>
+    <app-header :proj-info="projInfo"></app-header>
     <b-alert variant="danger" dismissible :show="showAlert" @dismissed="showAlert=false">
       {{ alertText }}
     </b-alert>

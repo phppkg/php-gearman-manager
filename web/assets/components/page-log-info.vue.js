@@ -2,7 +2,15 @@ components.pageLogInfo = {
   template: `
 <div class="row">
   <div class="col-12">
-    welcome
+      <b-input-group left="Select date">
+        <b-form-input v-model="selectDate" placeholder="select a date" type="date" autocompleted="on"></b-form-input>
+
+        <!-- Attach Right button -->
+        <b-input-group-button slot="right">
+          <b-button size="" variant="outline-success" @click="fetch"> Fetch Data </b-button>
+        </b-input-group-button>
+
+      </b-input-group>
   </div>
 </div>
 `,
