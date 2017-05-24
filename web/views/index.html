@@ -8,7 +8,8 @@
   <title>Gearman worker and job information</title>
   <!-- Add this to <head> -->
   <link type="text/css" rel="stylesheet" href="/assets/css/bootstrap.min.css">
-  <link type="text/css" rel="stylesheet" href="/assets/css/bootstrap-vue.css"/>
+  <link type="text/css" rel="stylesheet" href="/assets/lib/bootstrap-vue/bootstrap-vue.css"/>
+  <link type="text/css" rel="stylesheet" href="/assets/lib/flatpickr/flatpickr.min.css"/>
   <link type="text/css" rel="stylesheet" href="/assets/css/gwm.css"/>
   <script src="/assets/lib/vue.min.js"></script>
   <script src="/assets/lib/axios.min.js"></script>
@@ -35,15 +36,18 @@
 <!-- Add this after vue.js -->
 <script src="/assets/lib/polyfill.min.js"></script>
 <script src="/assets/lib/tether.min.js"></script>
-<script src="/assets/lib/bootstrap-vue.js"></script>
+<script src="/assets/lib/bootstrap-vue/bootstrap-vue.js"></script>
+<script src="/assets/lib/flatpickr/flatpickr.min.js"></script>
 <script src="/assets/lib/vue-router.min.js"></script>
 
 <!-- vue components -->
-<script src="/assets/components/app-header.vue.js"></script>
-<script src="/assets/components/app-footer.vue.js"></script>
-<script src="/assets/components/page-home.vue.js"></script>
-<script src="/assets/components/page-server-info.vue.js"></script>
-<script src="/assets/components/page-log-info.vue.js"></script>
+<div class="vue-components">
+  <script src="/assets/components/app-header.vue.js"></script>
+  <script src="/assets/components/app-footer.vue.js"></script>
+  <script src="/assets/components/page-home.vue.js"></script>
+  <script src="/assets/components/page-server-info.vue.js"></script>
+  <script src="/assets/components/page-log-info.vue.js"></script>
+</div>
 
 <!-- logic handle -->
 <script src="/assets/js/gwm.js"></script>

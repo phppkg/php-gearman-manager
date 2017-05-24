@@ -3,7 +3,7 @@ components.pageLogInfo = {
 <div class="row">
   <div class="col-12">
       <b-input-group left="Select date">
-        <b-form-input v-model="selectDate" placeholder="select a date" type="date" autocompleted="on"></b-form-input>
+        <b-form-input v-model="selectDate" placeholder="select a date" id="select-date" autocompleted="on"></b-form-input>
 
         <!-- Attach Right button -->
         <b-input-group-button slot="right">
@@ -14,6 +14,12 @@ components.pageLogInfo = {
   </div>
 </div>
 `,
+  mounted() {
+    flatpickr(document.getElementById('select-date'), {
+      maxDate: "today"
+    });
+
+  },
   data: function () {
     return {
       selectDate: '',
