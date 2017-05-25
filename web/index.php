@@ -14,19 +14,21 @@ require dirname(__DIR__) . '/examples/simple-autoloader.php';
 $wph = new WebPanelHandler([
     'basePath' => __DIR__,
     'logPath' => dirname(__DIR__) . '/examples/logs/',
-    'logFileName' => 'manager_%s.log',
-]);
-
-$wph->setRoutes([
-    'home' => 'index',
-    'proj-info' => 'projInfo',
-    'server-info' => 'serverInfo',
-    'log-info' => 'logInfo',
+    'logFileName' => 'gearman-manager_%s.log',
 ]);
 
 $route = $wph->get('r');
 // $route = $wph->getServerValue('REQUEST_URI');
 // var_dump($route, $_SERVER);
-$wph->dispatch($route);
+
+$wph
+    ->setRoutes([
+        'home' => 'index',
+        'proj-info' => 'projInfo',
+        'server-info' => 'serverInfo',
+        'jobs-info' => 'jobsInfo',
+        'job-info' => 'jobDetail',
+    ])
+    ->dispatch($route);
 
 

@@ -33,11 +33,6 @@ abstract class Job implements JobInterface
     protected $name;
 
     /**
-     * @var ManagerInterface
-     */
-    protected $manager;
-
-    /**
      * Job constructor.
      */
     public function __construct()
@@ -54,10 +49,9 @@ abstract class Job implements JobInterface
      * do the job
      * @param string $workload
      * @param \GearmanJob $job
-     * @param ManagerInterface $manager
      * @return mixed
      */
-    public function run($workload, \GearmanJob $job, ManagerInterface $manager)
+    public function run($workload, \GearmanJob $job)
     {
         $result = false;
         $this->id = $job->handle();

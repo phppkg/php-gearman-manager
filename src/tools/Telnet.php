@@ -100,6 +100,8 @@ class Telnet
         }
 
         $this->driver = $driver;
+        $this->config['blocking'] = (bool)$this->config['blocking'];
+        $this->config['timeout'] = (int)$this->config['timeout'];
     }
 
     /**

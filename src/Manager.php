@@ -158,7 +158,9 @@ class Manager extends LiteManager
 
             try {
                 list($h, $p) = strpos($s, ':') ? explode(':', $s) : [$s, 4730];
-                $telnet = new Telnet($h, $p);
+                $telnet = new Telnet($h, $p, [
+                    'timeout' => 3,
+                ]);
                 $result = $telnet->command('status');
                 $telnet->close();
             } catch (\Exception $e) {

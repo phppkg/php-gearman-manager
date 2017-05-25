@@ -19,7 +19,7 @@
 </head>
 <body>
   <div id="app" class="app-wrapper">
-    <b-progress striped variant="warning" v-model="progress" :precision="1" style="height: 2px;" v-show="progress"></b-progress>
+    <b-progress animated striped variant="warning" v-model="progress" :precision="1" style="height: 2px;" v-show="progress"></b-progress>
     <app-header :proj-info="projInfo"></app-header>
     <b-alert class="container" variant="danger" dismissible :show="showAlert" @dismissed="showAlert=false">
       {{ alertText }}

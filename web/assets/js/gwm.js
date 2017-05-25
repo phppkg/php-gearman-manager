@@ -1,6 +1,65 @@
 /**
  * Created by inhere on 2017/5/22.
  */
+function json_encode(obj) {
+  return JSON.stringify(obj)
+}
+function json_decode(str) {
+  return JSON.parse(str)
+}
+const session = {
+  set: function (key, value) {
+    sessionStorage.setItem(key, value)
+  },
+  get: function (key) {
+    return sessionStorage.getItem(key)
+  },
+  setJson: function (key, obj) {
+    sessionStorage.setItem(key, json_encode(obj))
+  },
+  getJson: function (key) {
+    return json_decode(this.get(key))
+  },
+  key: function (index) {
+    return sessionStorage.key(index)
+  },
+  has: function (key) {
+    return this.get(key) !== null
+  },
+  len: function () {
+    return sessionStorage.length
+  },
+  clear: function () {
+    sessionStorage.clear()
+  }
+}
+
+const storage = {
+  set: function (key, value) {
+    localStorage.setItem(key, value)
+  },
+  get: function (key) {
+    return localStorage.getItem(key)
+  },
+  setJson: function (key, obj) {
+    localStorage.setItem(key, json_encode(obj))
+  },
+  getJson: function (key) {
+    return json_decode(this.get(key))
+  },
+  key: function (index) {
+    return localStorage.key(index)
+  },
+  has: function (key) {
+    return this.get(key) !== null
+  },
+  len: function () {
+    return localStorage.length
+  },
+  clear: function () {
+    localStorage.clear()
+  }
+}
 
 // 务必在加载 Vue 之后，立即同步设置以下内容
 Vue.config.devtools = true

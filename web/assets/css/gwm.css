@@ -26,6 +26,10 @@
   .job-names {
       margin: 0 .5em;
   }
+
+  .popover {
+    max-width: 450px;
+  }
 }
 
 /* 可以设置不同的进入和离开动画 */

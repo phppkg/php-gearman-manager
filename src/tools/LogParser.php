@@ -45,7 +45,7 @@ class LogParser
     public function __construct($file, array $config = [])
     {
         if (!is_file($file)) {
-            throw new \InvalidArgumentException("File not exists. FILE: $file", - __LINE__);
+            throw new \InvalidArgumentException("File not exists. FILE: $file", __LINE__);
         }
 
         $this->file = $file;
@@ -101,6 +101,11 @@ class LogParser
         return $counts;
     }
 
+    public function getErrorCount()
+    {
+        return $this->getMatchedCount('[ERROR]');
+    }
+
     public function getMatchedLines($keyword)
     {
         exec("cat $this->file | grep '$keyword'", $lines);
@@ -125,7 +130,7 @@ class LogParser
      * @param array $lines
      * @return mixed
      */
-    public function parseLines(array $lines)
+    protected function parseLines(array $lines)
     {
         if (!$lines) {
             return null;
@@ -137,6 +142,10 @@ class LogParser
             $info = explode('] ', trim($line));
             list($role, $pid) = explode(':', $info[1]);
             preg_match('/^doJob: ([\w-]+)\((\S+)\).*count: (\d)/', $info[3], $matches);
+
+            if (!isset($matches[1],$matches[2],$matches[3])) {
+                throw new \RuntimeException("Log line format is error! cannot parse it.", __LINE__);
+            }
 
             $data[] = [
                 'time' => trim($info[0], '['),
@@ -167,11 +176,21 @@ class LogParser
 
         if (strpos($str, 'workload:')) {
             preg_match("/Job workload: (.*)\n.*handler\((\S+)\).*\n\[(.*)\] \[Worker/", $str, $matches);
+
+            if (!isset($matches[1],$matches[2],$matches[3])) {
+                throw new \RuntimeException("Log line format is error! cannot parse it.", __LINE__);
+            }
+
             $detail['workload'] = $matches[1];
             $detail['handler'] = $matches[2];
             $detail['end_time'] = $matches[3];
         } else {
             preg_match("/.*handler\((\S+)\).*\n\[(.*)\] \[Worker/", $str, $matches);
+
+            if (!isset($matches[1],$matches[2])) {
+                throw new \RuntimeException("Log line format is error! cannot parse it.", __LINE__);
+            }
+
             $detail['workload'] = '!No Data!';
             $detail['handler'] = $matches[1];
             $detail['end_time'] = $matches[2];

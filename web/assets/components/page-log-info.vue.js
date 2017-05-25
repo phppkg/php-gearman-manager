@@ -4,24 +4,32 @@ components.pageLogInfo = {
   <div class="col-12">
     <form>
       <div class="form-group row">
-        <label for="select-date" class="col-2 col-form-label">Date</label>
-        <div class="col-10">
+        <label for="select-date" class="col-3 col-form-label">Select A Date</label>
+        <div class="col-6">
           <b-form-input v-model="selectDate" placeholder="select a date" id="select-date" autocompleted="on"></b-form-input>
         </div>
       </div>
-      <div class="form-group">
-        <button type="button" class="btn btn-primary push-md-4" @click="fetch"> Fetch Data </button>
+      <div class="form-group row">
+        <div class="col-6 push-sm-6">
+          <b-form-checkbox v-model="cache">Cache</b-form-checkbox>
+          <button class="btn btn-primary" type="button" @click="fetch"> Fetch Data </button>
+        </div>
       </div>
     </form>
 
+    <hr>
+    <h4>Job information of the date: <span v-show="selectDate" class="text-success">{{ selectDate }}</span> <hr></h4>
+
     <!-- Simple -->
     <b-card class="mb-2" variant="success" v-if="jobsInfo.length">
-      Date {{ selectDate }}, Worker (re)start times of the day: <code>{{ startTimes }}</code>,
+      Worker (re)start times of the day: <code>{{ startTimes }}</code>,
       Job execute count:
         started - <code>{{ typeCounts.started }}</code>
         completed - <code>{{ typeCounts.completed }}</code>
         failed - <code>{{ typeCounts.failed }}</code>
     </b-card>
+
+    <hr v-show="jobsInfo.length">
 
     <div>
       <div class="justify-content-center my-1 row">
@@ -44,11 +52,11 @@ components.pageLogInfo = {
         <template slot="job_id" scope="item">
           <code>{{item.value}}</code>
         </template>
-        <template slot="exec_count" scope="item">
-          {{item.value}}
+        <template slot="worker" scope="item">
+          Executed job <code>{{item.item.exec_count}}</code>(PID<code>{{item.item.pid}}</code>)
         </template>
         <template slot="actions" scope="item">
-          <b-btn size="sm" @click="details(item)">Details</b-btn>
+          <b-btn size="sm" variant="outline-info" @click="showDetail(item)">Detail</b-btn>
         </template>
       </b-table>
 
@@ -61,35 +69,50 @@ components.pageLogInfo = {
           <b-pagination size="sm" :total-rows="this.jobsInfo.length" :per-page="perPage" v-model="curPage"/>
         </b-form-fieldset>
       </div>
+
+      <!-- Modal Component @shown="clearName" -->
+      <b-modal ok-only id="d-modal" title="Job Detail" @change="changeModal">
+        JobId: <code>{{jobDetail.id}}</code>
+        <ul v-if="jobDetail">
+          <li>Handler {{jobDetail.handler}}</li>
+          <li>Handler {{jobDetail.handler}}</li>
+        </ul>
+
+      </b-modal>
     </div>
+
   </div>
+
 </div>
 `,
   mounted() {
-    flatpickr(document.getElementById('select-date'), {
+    const el = document.getElementById('select-date')
+    const fp = flatpickr(el, {
+      defaultDate: "today",
       maxDate: "today"
     });
 
+    this.selectDate = el.value
   },
   data: function () {
     return {
+      cache: true,
       selectDate: '',
       startTimes: 0,
       typeCounts: null,
       jobsInfo: [],
       infoFields: { // time role pid level job_name job_id exec_count
         time: {label: "Start Time"},
-        role: {label: "Role", sortable: true },
-        pid: {label: "PID" },
-        level: {label: "Level", sortable: true },
+        worker: {label: "Worker"},
+        level: {label: "Log Level", sortable: true },
         job_name: {label: "Job Name", sortable: true },
         job_id: {label: "Job ID", sortable: true },
-        exec_count: {label: "Exec Job Count"},
         actions: {label: 'Actions'}
       },
       jobDetail: null,
       detailFields: {
         handler: {label: "Job Handler", sortable: true },
+        start_time: {label: "Start Time", sortable: true },
         end_time: {label: "End Time", sortable: true },
         status: {label: "Status", sortable: true },
         workload: {label: "Workload"}
@@ -99,14 +122,40 @@ components.pageLogInfo = {
       filter: null
     }
   },
+  computed: {
+  },
   methods: {
+    changeModal: function (isVisible, e) {
+      console.log(isVisible, e)
+    },
+    showDetail: function (job) {
+      console.log(job)
+      this.fetchDetail(job)
+      this.$root.$emit('show::modal', 'd-modal')
+    },
     fetch() {
       const self = this
+      const date = this.selectDate
+
+      if (!date) {
+        vm.alert('Please select a date!')
+        return
+      }
+
+      if (this.cache && session.has(date)) {
+        const data = session.getJson(date)
+
+        this.startTimes = data.startTimes
+        this.typeCounts = data.typeCounts
+        this.jobsInfo = data.jobsInfo
+
+        return
+      }
 
       vm.alert()
-      axios.get('/?r=log-info',{
+      axios.get('/?r=jobs-info',{
         params: {
-          date: this.selectDate
+          date: date
         }
       })
         .then(({data, status}) => {
@@ -120,20 +169,29 @@ components.pageLogInfo = {
           self.startTimes = data.data.startTimes
           self.typeCounts = data.data.typeCounts
           self.jobsInfo = data.data.jobsInfo
+
+          session.setJson(date, data.data)
       })
         .catch(err => {
           console.error(err)
-          vm.alert('network error!')
+          vm.alert('network error(catched)!')
       })
     },
-    fetchDetail(jobId) {
+    fetchDetail(job) {
       const self = this
+      const jid = job.item.job_id
+
+      if (session.has(jid)) {
+        self.jobDetail = session.getJson(jid)
+
+        return
+      }
 
       vm.alert()
-      axios.get('/?r=log-info',{
+      axios.get('/?r=job-info',{
         params: {
           date: this.selectDate,
-          jobId: jobId,
+          jobId: jid
         }
       })
         .then(({data, status}) => {
@@ -144,11 +202,16 @@ components.pageLogInfo = {
             return
           }
 
-          self.jobDetail = data.data.detail
+          let detail = data.data
+          detail.id = jid
+          detail.start_time = job.item.time
+
+          self.jobDetail = detail
+          session.setJson(jid, detail)
       })
         .catch(err => {
           console.error(err)
-          vm.alert('network error!')
+          vm.alert('network error(catched)!')
       })
     }
   }

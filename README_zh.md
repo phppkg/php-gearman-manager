@@ -18,7 +18,7 @@ php 的 gearman workers 管理工具。
 - 详细的运行日志(启动、重启、停止、收到job...)，可以按天或小时存放日志. 可以自定义日志级别
 - 内置了几个有趣的job handler 基类，可以快速的上手。 `examples` 目录下的可以直接运行，当然得先安装好 gearmand server.
 - 内置了简单的 `curl` `telnet` `monitor` `logger` 等工具类
-- 内置了简单的 monitor 的web面板
+- 内置了简单的 monitor 的web面板, 可以查看 server,worker,jobs 等的信息，以及简单的日志分析
 
 > 只支持 linux 环境， 需要php的 `pcntl` `posix` 扩展. macOs 应该也可以用，但没测试。
 > php >= 5.6 and < 7.0.0(php的gearman扩展不支持7)
@@ -247,19 +247,19 @@ class MyJob extends UseLogJob
 - 你只需要关注数据验证，设置好正确的 `$baseUrl`(api host) 和 `$path`(api path) (可选的 `$method`)
 - 正确的数据将会原样的发送给接口地址(`$baseUrl + $path`)
 
-使用：
+#### 若不关注数据格式，仅想异步的执行一些逻辑
 
-- 若不关注数据格式，使用： `inhere\gearman\jobs\StdRequestProxyJob`
+- 使用： `inhere\gearman\jobs\StdHostProxyJob`
 
-`StdRequestProxyJob` 通用的项目请求代理job handler,继承自 `RequestProxyJob`. 
+`StdHostProxyJob` 通用的项目请求代理job handler,继承自 `RequestProxyJob`. 
 
 针对通用的不在此处关心数据格式的内部接口，即是原样的数据转发
 
-usage:
+example:
 
 ```php
-$mgr->addHandler('user_api', new StdRequestProxyJob('http://user.domain.com'));
-$mgr->addHandler('goods_api', new StdRequestProxyJob('http://goods.domain.com'));
+$mgr->addHandler('user_api', new StdHostProxyJob('http://user.domain.com'));
+$mgr->addHandler('goods_api', new StdHostProxyJob('http://goods.domain.com'));
 ```
 
 in client:
@@ -272,9 +272,29 @@ $client->doBackground('user_api', [
 ]);
 ```
 
-- 继承 `inhere\gearman\jobs\RequestProxyJob`
+- 使用： `inhere\gearman\jobs\StdApiProxyJob`
 
-对一些要求高的api，想在数据转发前做一些事情，比如 验证数据结构。
+有一些接口请求特别频繁，不想混杂在上面的项目请求中，以免影响到其他请求。我们可以单独创建一个handler来转发它
+
+example:
+
+```
+$mgr->addHandler('refreshToken', new StdApiProxyJob('http://user.domain.com', '/refreshToken'));
+```
+
+in client:
+
+```
+$client->doBackground('refreshToken', [
+    'userId' => 123,
+    'token' => 'xxdd',
+    // ... ...
+]);
+```
+
+#### 继承 `inhere\gearman\jobs\RequestProxyJob`
+
+对一些要求高的api，想在数据转发前做一些事情，比如 验证数据结构 等等。自定义性更强
 
 ```php
 class UserAfterRegisterJob extends RequestProxyJob
@@ -295,14 +315,16 @@ class UserAfterRegisterJob extends RequestProxyJob
 
 ## monitor的web面板
 
-内置了简单的 monitor 的web面板，可以查看 server, jobs, workers 的信息。
+内置了简单的 monitor 的web面板，可以查看 server, jobs, workers 的信息。同时内置了简单的日志分析
 
-> 只是简单的实现，刷新一次页面才更新一次信息。 但是相关工具类已经提供，可以自己自定义扩展。
+> 只是简单的实现。 但是相关工具类已经提供，可以自己自定义扩展。
 
 在项目目录执行：
 
 ```bash
- php -S 127.0.0.1:5888 -t web
+bash server.sh
+// OR
+php -S 127.0.0.1:5888 -t web
 ```
 
 然后打开浏览器访问 http://127.0.0.1:5888 效果：

@@ -17,7 +17,7 @@ use inhere\gearman\tools\CurlHelper;
  * - 你只需要关注数据验证，设置好正确的 `$baseUrl`(api host) 和 `$path`(api path) (可选的 `$method`)
  * - 正确的数据将会原样的发送给接口地址(`$baseUrl + $path`)
  *
- * usage:
+ * example:
  *
  * ```php
  * class UserAfterRegisterJob extends RequestProxyJob
@@ -82,12 +82,11 @@ abstract class RequestProxyJob extends UseLogJob
      */
     protected function doRun($workload, \GearmanJob $job)
     {
-        $this->info("received workload=$workload");
-
+        $this->info("Received workload=$workload");
         $payload = json_decode($workload, true);
 
         if (!$this->beforeSend($payload)) {
-            $this->err("data validate failed, workload=$workload");
+            $this->err("Data validate failed, workload=$workload");
             return false;
         }
 
@@ -95,7 +94,7 @@ abstract class RequestProxyJob extends UseLogJob
         $baseUrl = $this->baseUrl;
         $path = $this->path;
 
-        $this->info("Request method=$method host=$baseUrl path=$path data=" . json_encode($payload));
+        $this->info("Request method=$method baseUrl=$baseUrl path=$path data=" . json_encode($payload));
 
         $curl = new CurlHelper();
         $ret = $curl->setBaseUrl($baseUrl)->$method($path, $payload);
@@ -107,7 +106,7 @@ abstract class RequestProxyJob extends UseLogJob
             return true;
         }
 
-        $this->err("Failed for the job, remote return=$ret send=", [
+        $this->err("Failed for the job, remote return=$ret, send=", [
             'method' => $method,
             'api' => $baseUrl . $path,
             'send' => $payload,

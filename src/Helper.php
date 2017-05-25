@@ -203,7 +203,7 @@ class Helper
 
         exit(json_encode([
             'code' => (int)$code,
-            'msg' => $msg,
+            'msg' => $msg ?: 'successful',
             'data' => $data,
         ]));
     }

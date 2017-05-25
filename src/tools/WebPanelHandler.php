@@ -81,10 +81,13 @@ class WebPanelHandler
 
     /**
      * @param array $routes
+     * @return self
      */
     public function setRoutes(array $routes)
     {
         $this->routes = $routes;
+
+        return $this;
     }
 
     /**
@@ -151,7 +154,7 @@ class WebPanelHandler
         ]);
     }
 
-    public function logInfoAction()
+    public function jobsInfoAction()
     {
         $date = $this->get('date', date('Y-m-d'));
 
@@ -166,15 +169,24 @@ class WebPanelHandler
             $this->outJson([], __LINE__, "Log file not exists of the date: $date");
         }
 
-        $lp = new LogParser($file);
+        $code = 0;
+        $data = [];
+        $msg = 'successful';
 
-        // var_dump($lp->getWorkerStartTimes(),$lp->getTypeCounts(),$lp->getJobsInfo());
+        try {
+            $lp = new LogParser($file);
+            // var_dump($lp->getWorkerStartTimes(),$lp->getTypeCounts(),$lp->getJobsInfo());
+            $data = [
+                'startTimes' => $lp->getWorkerStartTimes(),
+                'typeCounts' => $lp->getTypeCounts(),
+                'jobsInfo' => $lp->getJobsInfo(),
+            ];
+        } catch (\Exception $e) {
+            $code = $e->getCode();
+            $msg = $e->getMessage();
+        }
 
-        $this->outJson([
-            'startTimes' => $lp->getWorkerStartTimes(),
-            'typeCounts' => $lp->getTypeCounts(),
-            'jobsInfo' => $lp->getJobsInfo(),
-        ]);
+        $this->outJson($data, $code, $msg);
     }
 
     public function jobDetailAction()
@@ -193,10 +205,18 @@ class WebPanelHandler
             $this->outJson([], __LINE__, "Log file not exists of the date: $date");
         }
 
-        $lp = new LogParser($file);
+        $code = 0;
+        $data = [];
+        $msg = 'successful';
 
-        $this->outJson([
-            'detail' => $lp->getJobDetail($jobId)
-        ]);
+        try {
+            $lp = new LogParser($file);
+            $data = $lp->getJobDetail($jobId);
+        } catch (\Exception $e) {
+            $code = $e->getCode();
+            $msg = $e->getMessage();
+        }
+
+        $this->outJson($data, $code, $msg);
     }
 }

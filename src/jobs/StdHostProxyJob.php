@@ -9,13 +9,16 @@
 namespace inhere\gearman\jobs;
 
 /**
- * Class StdRequestProxyJob - 通用的项目请求代理job handler
+ * Class StdHostProxyJob - 通用的项目(主机/域)请求代理job handler
  *
- * usage:
+ * - 创建handler时指定 baseUrl(通常是域名地址)
+ * - 在客户端添加job时，设定要请求的 URI(通过发送参数 `_uri`), 可选的 `_method` 设置请求方法
+ *
+ * example:
  *
  * ```
- * $mgr->addHandler('user_api', new StdRequestProxyJob('http://user.domain.com'));
- * $mgr->addHandler('goods_api', new StdRequestProxyJob('http://goods.domain.com'));
+ * $mgr->addHandler('user_api', new StdHostProxyJob('http://user.domain.com'));
+ * $mgr->addHandler('goods_api', new StdHostProxyJob('http://goods.domain.com'));
  * ```
  *
  * in client:
@@ -30,15 +33,15 @@ namespace inhere\gearman\jobs;
  *
  * @package inhere\gearman\jobs
  */
-class StdRequestProxyJob extends RequestProxyJob
+class StdHostProxyJob extends RequestProxyJob
 {
     /**
-     * StdRequestProxyJob constructor.
+     * StdHostProxyJob constructor.
      * @param $baseUrl
      */
     public function __construct($baseUrl)
     {
-        $this->baseUrl = $baseUrl;
+        $this->baseUrl = trim($baseUrl);
 
         parent::__construct();
     }

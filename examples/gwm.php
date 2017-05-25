@@ -26,7 +26,7 @@ $config = [
     'pid_file' => __DIR__ . '/manager.pid',
 
     'log_level' => Manager::LOG_DEBUG,
-    'log_file' => __DIR__ . '/logs/manager.log',
+    'log_file' => __DIR__ . '/logs/gearman-manager.log',
 
     'stat_file' => __DIR__ . '/logs/stat.dat',
     'loader_file' => __DIR__ . '/job_handlers.php',
