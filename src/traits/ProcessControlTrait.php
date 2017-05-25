@@ -138,7 +138,7 @@ trait ProcessControlTrait
         $pipeFile = "/tmp/{$this->name}.pipe";
 
         if(!file_exists($pipeFile) && !posix_mkfifo($pipeFile, 0666)){
-            $this->stderr("Creat the pipe failed! PATH: $pipeFile");
+            $this->stderr("Create the pipe failed! PATH: $pipeFile");
         }
 
         $this->pipeHandle = fopen($pipeFile, 'wr');

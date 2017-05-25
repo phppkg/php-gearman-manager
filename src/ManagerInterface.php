@@ -109,6 +109,8 @@ interface ManagerInterface
      */
     public function addHandler($name, $handler, array $opts = []);
 
+    public function doJob($job);
+
     /**
      * @param array $config
      */

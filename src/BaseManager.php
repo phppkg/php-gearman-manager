@@ -8,7 +8,6 @@
 
 namespace inhere\gearman;
 
-use inhere\gearman\jobs\JobInterface;
 use inhere\gearman\tools\Telnet;
 use inhere\gearman\traits;
 

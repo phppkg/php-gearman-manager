@@ -15,6 +15,8 @@ namespace inhere\gearman\tools;
  */
 class LogParser
 {
+    const MATCH_ERROR = '[ERROR] ';
+
     /**
      * @var string
      */
@@ -74,6 +76,7 @@ class LogParser
 
     /**
      * getTypeCount
+     * @param string $type
      * @return int
      */
     public function getTypeCount($type)
@@ -101,11 +104,26 @@ class LogParser
         return $counts;
     }
 
+    /**
+     * @return int
+     */
     public function getErrorCount()
     {
-        return $this->getMatchedCount('[ERROR]');
+        return $this->getMatchedCount(self::MATCH_ERROR);
     }
 
+    /**
+     * @return array
+     */
+    public function getErrorMessages()
+    {
+        return $this->getMatchedLines(self::MATCH_ERROR);
+    }
+
+    /**
+     * @param $keyword
+     * @return mixed
+     */
     public function getMatchedLines($keyword)
     {
         exec("cat $this->file | grep '$keyword'", $lines);
@@ -113,6 +131,10 @@ class LogParser
         return $lines;
     }
 
+    /**
+     * @param $keyword
+     * @return int
+     */
     public function getMatchedCount($keyword)
     {
         return (int)exec("cat $this->file | grep '$keyword' | wc -l");
