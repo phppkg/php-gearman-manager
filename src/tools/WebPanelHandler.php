@@ -135,16 +135,6 @@ class WebPanelHandler
 
         $monitor = new Monitor([
             'servers' => json_decode($servers, true),
-    //       'servers' => [
-    //           [
-    //               'name' => 'test',
-    //               'address' => '10.0.0.2:4730',
-    //           ],
-    //           [
-    //               'name' => 'product',
-    //               'address' => '10.0.0.1:4730',
-    //           ]
-    //       ]
         ]);
 
         $this->outJson([
@@ -163,7 +153,7 @@ class WebPanelHandler
         }
 
         $realName = sprintf($this->config['logFileName'], $date);
-        $file = $this->config['logPath']. $realName;
+        $file = $this->config['logPath'] . $realName;
 
         if (!is_file($file)) {
             $this->outJson([], __LINE__, "Log file not exists of the date: $date");
@@ -199,7 +189,7 @@ class WebPanelHandler
         }
 
         $realName = sprintf($this->config['logFileName'], $date);
-        $file = $this->config['logPath']. $realName;
+        $file = $this->config['logPath'] . $realName;
 
         if (!is_file($file)) {
             $this->outJson([], __LINE__, "Log file not exists of the date: $date");

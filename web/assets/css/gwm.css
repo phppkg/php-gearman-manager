@@ -1,16 +1,23 @@
 @media (min-width: 576px) {
+  .app-wrapper {
+    padding-top: 60px;
+  }
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100;
+  }
   .app-body {
     margin-top: 1.5em;
-  }
-  .bd-footer {
-      text-align: left;
   }
   .bd-footer {
       padding: 4rem 0;
       margin-top: 4rem;
       font-size: 85%;
       text-align: center;
-      background-color: #f7f7f7;
+      background-color: rgba(88, 147, 255, .7);
   }
   .bd-footer-links {
       padding-left: 0;

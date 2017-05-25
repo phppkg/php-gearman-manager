@@ -12,21 +12,24 @@ components.pageLogInfo = {
       <div class="form-group row">
         <div class="col-6 push-sm-6">
           <b-form-checkbox v-model="cache">Cache</b-form-checkbox>
-          <button class="btn btn-primary" type="button" @click="fetch"> Fetch Data </button>
+          <button class="btn btn-success" type="button" @click="fetch"> <i class="icon-search"></i> Fetch Data </button>
         </div>
       </div>
     </form>
 
     <hr>
-    <h4>Job information of the date: <span v-show="selectDate" class="text-success">{{ selectDate }}</span> <hr></h4>
+    <h4>Job statistics of the date: <span v-show="selectDate" class="text-success">{{ selectDate }}</span> <hr></h4>
 
     <!-- Simple -->
-    <b-card class="mb-2" variant="success" v-if="jobsInfo.length">
-      Worker (re)start times of the day: <code>{{ startTimes }}</code>,
-      Job execute count:
+    <b-card class="mb-2" v-if="startTimes">
+        <ul>
+            <li>Worker (re)start times of the day: <code>{{ startTimes }}</code></li>
+            <li>Job execute statistics:
         started - <code>{{ typeCounts.started }}</code>
         completed - <code>{{ typeCounts.completed }}</code>
-        failed - <code>{{ typeCounts.failed }}</code>
+        failed - <code>{{ typeCounts.failed }}</code></li>
+        </ul>
+      
     </b-card>
 
     <hr v-show="jobsInfo.length">
@@ -39,7 +42,7 @@ components.pageLogInfo = {
       </div>
 
       <b-table bordered hover show-empty
-               head-variant="success"
+               head-variant="info"
                :items="jobsInfo"
                :fields="infoFields"
                :current-page="curPage"
@@ -56,7 +59,7 @@ components.pageLogInfo = {
           Executed job <code>{{item.item.exec_count}}</code>(PID<code>{{item.item.pid}}</code>)
         </template>
         <template slot="actions" scope="item">
-          <b-btn size="sm" variant="outline-info" @click="showDetail(item)">Detail</b-btn>
+          <b-btn size="sm" variant="outline-info" @click="showDetail(item)"><i class="icon-eye"></i>Detail</b-btn>
         </template>
       </b-table>
 
@@ -71,11 +74,14 @@ components.pageLogInfo = {
       </div>
 
       <!-- Modal Component @shown="clearName" -->
-      <b-modal ok-only id="d-modal" title="Job Detail" @change="changeModal">
+      <b-modal ok-only id="d-modal" title="Job Detail" @change="changeModal" v-if="jobDetail">
         JobId: <code>{{jobDetail.id}}</code>
-        <ul v-if="jobDetail">
+        <ul>
           <li>Handler {{jobDetail.handler}}</li>
-          <li>Handler {{jobDetail.handler}}</li>
+          <li>Start Time {{jobDetail.start_time}}</li>
+          <li>End Time {{jobDetail.end_time}}</li>
+          <li>Status   {{jobDetail.status}}</li>
+          <li>Workload  <code>{{jobDetail.workload}}</code></li>
         </ul>
 
       </b-modal>
@@ -87,7 +93,8 @@ components.pageLogInfo = {
 `,
   mounted() {
     const el = document.getElementById('select-date')
-    const fp = flatpickr(el, {
+
+    flatpickr(el, {
       defaultDate: "today",
       maxDate: "today"
     });

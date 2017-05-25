@@ -16,56 +16,6 @@ use Exception;
  */
 class Monitor
 {
-    /**
-     * Server list
-     *
-     * @var array
-     *
-     * [
-     *     'index' => [
-     *         'name' => 'default',
-     *         'address' => '1270.0.1:4730'
-     *     ],
-     *     ... ...
-     * ]
-     */
-    protected $_servers = [];
-
-    /**
-     * Filter: server IDs
-     *
-     * @var array
-     */
-    protected $_filterServers = [];
-
-    /**
-     * Filter: server name substring
-     *
-     * @var string
-     */
-    protected $_filterName = '';
-
-    /**
-     * Sort column name
-     *
-     * @var string
-     */
-    protected $_sort = '';
-
-    /**
-     * Group column name
-     *
-     * @var string
-     */
-    protected $_groupby = self::GROUP_NONE;
-
-    /**
-     * Error messages
-     *
-     * @var array
-     */
-    protected $_errors = [];
-
     const SORT_SERVER = 'server';
     const SORT_NAME = 'name';
     const SORT_JOBS_IN_QUEUE = 'in_queue';
@@ -83,6 +33,63 @@ class Monitor
     const GROUP_NAME = 'name';
 
     /**
+     * Server list
+     *
+     * @var array
+     * [
+     *     'index' => [
+     *         'name' => 'default',
+     *         'address' => '127.0.0.1:4730'
+     *     ],
+     *     [
+     *          'name' => 'test',
+     *          'address' => '10.0.0.2:4730',
+     *      ],
+     *      [
+     *          'name' => 'product',
+     *          'address' => '10.0.0.1:4730',
+     *      ]
+     *     ... ...
+     * ]
+     */
+    protected $servers = [];
+
+    /**
+     * Filter: server IDs
+     *
+     * @var array
+     */
+    protected $filterServers = [];
+
+    /**
+     * Filter: server name substring
+     *
+     * @var string
+     */
+    protected $filterName = '';
+
+    /**
+     * Sort column name
+     *
+     * @var string
+     */
+    protected $sort = '';
+
+    /**
+     * Group column name
+     *
+     * @var string
+     */
+    protected $groupBy = self::GROUP_NONE;
+
+    /**
+     * Error messages
+     *
+     * @var array
+     */
+    protected $_errors = [];
+
+    /**
      * Class constructor
      * @param array $options
      */
@@ -98,19 +105,19 @@ class Monitor
     public function setOptions(array $options)
     {
         if (isset($options['filterServers']) && is_array($options['filterServers'])) {
-            $this->_filterServers = $options['filterServers'];
+            $this->filterServers = $options['filterServers'];
         }
 
         if (isset($options['filterName']) && strlen($options['filterName']) > 0) {
-            $this->_filterName = (string)$options['filterName'];
+            $this->filterName = (string)$options['filterName'];
         }
 
         if (isset($options['sort'])) {
-            $this->_sort = (string)$options['sort'];
+            $this->sort = (string)$options['sort'];
         }
 
         if (isset($options['groupby']) && in_array($options['groupby'], $this->_getGroupAvailableFunctions())) {
-            $this->_groupby = (string)$options['groupby'];
+            $this->groupBy = (string)$options['groupby'];
         }
 
         if (isset($options['servers'])) {
@@ -124,7 +131,7 @@ class Monitor
      */
     public function clearServers()
     {
-        $this->_servers = [];
+        $this->servers = [];
 
         return $this;
     }
@@ -137,7 +144,7 @@ class Monitor
      */
     public function addServer($index, $serverValues)
     {
-        $this->_servers[$index] = (array)$serverValues;
+        $this->servers[$index] = (array)$serverValues;
 
         return $this;
     }
@@ -172,7 +179,7 @@ class Monitor
      */
     public function getServers()
     {
-        return $this->_servers;
+        return $this->servers;
     }
 
     /**
@@ -209,8 +216,8 @@ class Monitor
     {
         $data = [];
 
-        foreach ($this->_servers as $index => $server) {
-            if ($this->_filterServers && !in_array($index, $this->_filterServers)) {
+        foreach ($this->servers as $index => $server) {
+            if ($this->filterServers && !in_array($index, $this->filterServers)) {
                 continue;
             }
 
@@ -243,8 +250,8 @@ class Monitor
         $i = 0;
         $data = $groupDataTmp = [];
 
-        foreach ($this->_servers as $index => $server) {
-            if ($this->_filterServers && !in_array($index, $this->_filterServers)) {
+        foreach ($this->servers as $index => $server) {
+            if ($this->filterServers && !in_array($index, $this->filterServers)) {
                 continue;
             }
 
@@ -255,18 +262,18 @@ class Monitor
                 unset($gmd);
 
                 foreach ((array)$status as $row) {
-                    if (strlen($this->_filterName) == 0 || stripos($row['job_name'], $this->_filterName) !== false) {
-                        $row['name'] = $this->_groupby === self::GROUP_SERVER ? '+' : $row['job_name'];
-                        $row['server'] = $this->_groupby === self::GROUP_NAME ? '+' : $server['name'];
+                    if (strlen($this->filterName) == 0 || stripos($row['job_name'], $this->filterName) !== false) {
+                        $row['name'] = $this->groupBy === self::GROUP_SERVER ? '+' : $row['job_name'];
+                        $row['server'] = $this->groupBy === self::GROUP_NAME ? '+' : $server['name'];
 
-                        if ($this->_groupby !== self::GROUP_NONE) {
-                            if (isset($groupDataTmp[$row[$this->_groupby]])) {
-                                $k = $groupDataTmp[$row[$this->_groupby]];
+                        if ($this->groupBy !== self::GROUP_NONE) {
+                            if (isset($groupDataTmp[$row[$this->groupBy]])) {
+                                $k = $groupDataTmp[$row[$this->groupBy]];
                                 foreach (['in_queue', 'in_running', 'capable_workers'] as $key) {
                                     $data[$k][$key] += $row[$key];
                                 }
                             } else {
-                                $groupDataTmp[$row[$this->_groupby]] = $i;
+                                $groupDataTmp[$row[$this->groupBy]] = $i;
                                 $data[] = $row;
                                 $i++;
                             }
@@ -295,8 +302,8 @@ class Monitor
     {
         $data = [];
 
-        foreach ($this->_servers as $index => $server) {
-            if ($this->_filterServers && !in_array($index, $this->_filterServers)) {
+        foreach ($this->servers as $index => $server) {
+            if ($this->filterServers && !in_array($index, $this->filterServers)) {
                 continue;
             }
 
@@ -308,9 +315,9 @@ class Monitor
 
                 foreach ($workers as $worker) {
                     if (
-                        strlen($this->_filterName) == 0 ||
-                        stripos($worker['ip'], $this->_filterName) !== false ||
-                        stripos(implode('$#!', $worker['job_names']), $this->_filterName) !== false
+                        strlen($this->filterName) == 0 ||
+                        stripos($worker['ip'], $this->filterName) !== false ||
+                        stripos(implode('$#!', $worker['job_names']), $this->filterName) !== false
                     ) {
 
                         if ($worker['job_names']) {
@@ -379,11 +386,11 @@ class Monitor
      */
     protected function _sortData(array $data, $colsAvailable)
     {
-        if (in_array($this->_sort, $colsAvailable)) {
+        if (in_array($this->sort, $colsAvailable)) {
             $sortCol = [];
 
             foreach ($data as $key => $values) {
-                $sortCol[$key] = $values[$this->_sort];
+                $sortCol[$key] = $values[$this->sort];
             }
 
             array_multisort($sortCol, $this->_getCurrentSortDir(), $data);

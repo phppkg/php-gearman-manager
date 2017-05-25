@@ -13,7 +13,7 @@ components.pageServerInfo = {
 
       <!-- Attach Right button -->
       <b-input-group-button slot="right">
-        <b-button size="" variant="outline-success" @click="addServer"> + </b-button>
+        <b-button size="" variant="outline-success" @click="addServer" title="add a server"> <i class="icon-plus"></i> </b-button>
       </b-input-group-button>
 
     </b-input-group>
@@ -27,7 +27,7 @@ components.pageServerInfo = {
     </ol>
   </div>
   <div class="justify-content-center my-1 row">
-    <b-button size="" variant="success" @click="getServerInfo"> Fetch Data From Remote </b-button>
+    <b-button size="" variant="success" @click="getServerInfo"> <i class="icon-search"></i> Fetch Data From Remote </b-button>
   </div>
 
   <h3><hr> Servers information <hr></h3>

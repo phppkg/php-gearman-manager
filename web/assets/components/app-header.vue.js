@@ -2,7 +2,7 @@ components.appHeader = {
   props: ['projInfo'],
   template: `
 <header>
-  <b-navbar toggleable type="inverse" style="background-color: #5893ff;">
+  <b-navbar toggleable fixed="top" type="inverse" style="background-color: #5893ff;box-shadow: 0 1px 3px #4277d8;">
     <div class="container">
       <b-nav-toggle target="nav_collapse"></b-nav-toggle>
 
@@ -19,7 +19,7 @@ components.appHeader = {
         </b-nav>
 
         <b-nav is-nav-bar class="ml-auto">
-          <b-nav-item href="http">Github</b-nav-item>
+          <b-nav-item href="http"><i class="icon-github-circled"></i>Github</b-nav-item>
           <b-nav-item href="http">Git@OSC</b-nav-item>
         </b-nav>
       </b-collapse>
