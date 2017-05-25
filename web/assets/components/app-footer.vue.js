@@ -8,7 +8,7 @@ components.appFooter = {
         <li><a :href="projInfo.github" target="_blank">GitHub</a></li>
         <li><a :href="projInfo.gitosc" target="_blank">Git@osc</a></li>
     </ul>
-    <p>welcome</p>
+    <p>welcome to here. current version <code>v{{projInfo.version}}</code></p>
   </div>
 </footer>
 `

@@ -12,7 +12,7 @@ components.pageHome = {
         Worker will automatically restart the process, prevent the dead
       </p>
       <p>For more information visit website</p>
-      <b-btn variant="primary" href="https://github.com/inhere/php-gearman-manager">Github</b-btn>
+      <b-link class="btn btn-primary" href="https://github.com/inhere/php-gearman-manager" target="_blank">Github</b-link>
     </b-jumbotron>
   </div>
 </div>

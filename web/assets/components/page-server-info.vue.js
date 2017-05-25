@@ -29,7 +29,9 @@ components.pageServerInfo = {
   <div class="justify-content-center my-1 row">
     <b-button size="" variant="success" @click="getServerInfo"> Fetch Data From Remote </b-button>
   </div>
-  <hr>
+
+  <h3><hr> Servers information <hr></h3>
+
   <div class="justify-content-center my-1 row">
     <b-form-fieldset horizontal label="Filter" class="col-6" :label-size="2">
       <b-form-input v-model="svrFilter" placeholder="Type to Search"></b-form-input>
@@ -48,7 +50,7 @@ components.pageServerInfo = {
     </template>
   </b-table>
 
-  <hr>
+  <h3><hr> Jobs and Workers information <hr> </h3>
 
   <b-tabs small pills lazy ref="tabs" v-model="tabIndex">
     <b-tab title="Jobs information(Status)">
@@ -153,9 +155,9 @@ components.pageServerInfo = {
       statusFields: {
         job_name: {label: "Job name", sortable: true },
         server: {label: "Server name", sortable: true },
-        in_queue: {label: "in queue"},
-        in_running: {label: "in running"},
-        capable_workers: {label: "capable workers"}
+        in_queue: {label: "in queue", sortable: true},
+        in_running: {label: "in running", sortable: true},
+        capable_workers: {label: "capable workers", sortable: true}
       },
       workersInfo: [],
       workersFields: {
@@ -170,8 +172,8 @@ components.pageServerInfo = {
       serversFields: {
         index: {label: "Index", sortable: true },
         name: {label: "Name", sortable: true },
-        address: {label: "Address", },
-        version: {label: "Version", }
+        address: {label: "Address" },
+        version: {label: "Version" }
       },
       stsCurPage: 1,
       stsPerPage: 10,

@@ -162,6 +162,10 @@ class WebPanelHandler
         $realName = sprintf($this->config['logFileName'], $date);
         $file = $this->config['logPath']. $realName;
 
+        if (!is_file($file)) {
+            $this->outJson([], __LINE__, "Log file not exists of the date: $date");
+        }
+
         $lp = new LogParser($file);
 
         // var_dump($lp->getWorkerStartTimes(),$lp->getTypeCounts(),$lp->getJobsInfo());
@@ -184,6 +188,10 @@ class WebPanelHandler
 
         $realName = sprintf($this->config['logFileName'], $date);
         $file = $this->config['logPath']. $realName;
+
+        if (!is_file($file)) {
+            $this->outJson([], __LINE__, "Log file not exists of the date: $date");
+        }
 
         $lp = new LogParser($file);
 

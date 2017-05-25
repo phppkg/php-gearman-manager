@@ -172,7 +172,7 @@ class LogParser
             $detail['end_time'] = $matches[3];
         } else {
             preg_match("/.*handler\((\S+)\).*\n\[(.*)\] \[Worker/", $str, $matches);
-            $detail['workload'] = 'Not Record!';
+            $detail['workload'] = '!No Data!';
             $detail['handler'] = $matches[1];
             $detail['end_time'] = $matches[2];
         }

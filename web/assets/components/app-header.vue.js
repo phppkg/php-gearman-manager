@@ -15,7 +15,7 @@ components.appHeader = {
         <b-nav is-nav-bar>
           <b-nav-item to="/home">Home</b-nav-item>
           <b-nav-item to="/server-info">Server Info</b-nav-item>
-          <b-nav-item to="/log-info">Log Parse</b-nav-item>
+          <b-nav-item to="/log-info">Log Analysis</b-nav-item>
         </b-nav>
 
         <b-nav is-nav-bar class="ml-auto">
