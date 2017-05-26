@@ -73,8 +73,7 @@ trait LogTrait
         }
 
         $label = isset(self::$levels[$level]) ? self::$levels[$level] : self::LOG_INFO;
-        list($ts, $ms) = explode('.', sprintf('%.4f', microtime(true)));
-        $ds = date('Y/m/d H:i:s', $ts) . '.' . $ms;
+        $ds = Helper::formatMicrotime(microtime(true));
 
         $logString = sprintf(
             '[%s] [%s:%d] [%s] %s %s' . PHP_EOL,

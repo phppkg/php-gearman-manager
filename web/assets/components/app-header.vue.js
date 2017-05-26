@@ -18,9 +18,9 @@ components.appHeader = {
           <b-nav-item to="/log-info">Log Analysis</b-nav-item>
         </b-nav>
 
-        <b-nav is-nav-bar class="ml-auto">
-          <b-nav-item href="http"><i class="icon-github-circled"></i>Github</b-nav-item>
-          <b-nav-item href="http">Git@OSC</b-nav-item>
+        <b-nav is-nav-bar class="ml-auto" v-show="projInfo">
+          <b-nav-item :href="projInfo.github" target="_blank"><i class="icon-github-circled"></i>Github</b-nav-item>
+          <b-nav-item :href="projInfo.github" target="_blank">Git@OSC</b-nav-item>
         </b-nav>
       </b-collapse>
     </div>

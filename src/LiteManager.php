@@ -237,6 +237,9 @@ class LiteManager extends BaseManager
         $this->log("doJob: $name($h) Job workload: $wl", self::LOG_DEBUG);
         $this->trigger(self::EVENT_BEFORE_WORK, [$job]);
 
+        $status = 1;
+        $runTime = microtime(1);
+
         // Run the job handler here
         try {
             if ($handler instanceof JobInterface) {
@@ -249,9 +252,14 @@ class LiteManager extends BaseManager
                 $ret = $handler($job->workload(), $job);
             }
 
+            $endTime = microtime(1);
+
             $this->log("doJob: $name($h) This job has been completed", self::LOG_WORKER_INFO);
             $this->trigger(self::EVENT_AFTER_WORK, [$job, $ret]);
         } catch (\Exception $e) {
+            $status = 0;
+            $endTime = microtime(1);
+
             $this->trigger(self::EVENT_ERROR_WORK, [$job, $e]);
             $this->log(sprintf(
                 "doJob: $name($h) Failed to do the job. Exception: %s On %s Line %s\nCode Trace:\n%s",
@@ -261,6 +269,13 @@ class LiteManager extends BaseManager
                 $e->getTraceAsString()
             ), self::LOG_ERROR);
         }
+
+        $this->log("doJob: $name($h) Statistics", self::LOG_WORKER_INFO, [
+            'status'    => $status,
+            'run_time'  => Helper::formatMicrotime($runTime),
+            'end_time'  => Helper::formatMicrotime($endTime),
+            'exec_count' => $this->jobExecCount,
+        ]);
 
         return $ret;
     }

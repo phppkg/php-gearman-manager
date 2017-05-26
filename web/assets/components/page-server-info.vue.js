@@ -84,7 +84,7 @@ components.pageServerInfo = {
 
       <div class="justify-content-center row my-1">
         <b-form-fieldset horizontal label="Rows per page" class="col-4" :label-size="7">
-          <b-form-select :options="[{text:10,value:10},{text:15,value:15}]" v-model="stsPerPage">
+          <b-form-select :options="[{text:15,value:15},{text:20,value:20}]" v-model="stsPerPage">
           </b-form-select>
         </b-form-fieldset>
         <b-form-fieldset horizontal label="Pagination" class="col-8" :label-size="2">
@@ -123,7 +123,7 @@ components.pageServerInfo = {
 
       <div class="justify-content-center row my-1">
         <b-form-fieldset horizontal label="Rows per page" class="col-4" :label-size="7">
-          <b-form-select :options="[{text:10,value:10},{text:15,value:15}]" v-model="wkrPerPage">
+          <b-form-select :options="[{text:15,value:15},{text:20,value:20}]" v-model="wkrPerPage">
           </b-form-select>
         </b-form-fieldset>
         <b-form-fieldset horizontal label="Pagination" class="col-8" :label-size="2">
@@ -176,10 +176,10 @@ components.pageServerInfo = {
         version: {label: "Version" }
       },
       stsCurPage: 1,
-      stsPerPage: 10,
+      stsPerPage: 15,
       stsFilter: null,
       wkrCurPage: 1,
-      wkrPerPage: 10,
+      wkrPerPage: 15,
       wkrFilter: null,
       tabIndex: null,
       svrFilter: null

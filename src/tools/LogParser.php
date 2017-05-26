@@ -55,6 +55,7 @@ class LogParser
     }
 
     /**
+     * get all started jobs info
      * @return array
      */
     public function getJobsInfo()
@@ -63,7 +64,7 @@ class LogParser
         $kw = static::$typeKeywordMap['started'];
 
         if ($lines = $this->getMatchedLines($kw)) {
-            $data = $this->parseLines($lines);
+            $data = $this->parseStartedLines($lines);
 
             if ($this->config['cacheData'] && ($dir = $this->config['cacheDir'])) {
                 $filename = basename($this->file);
@@ -72,6 +73,49 @@ class LogParser
         }
 
         return $data;
+    }
+
+    /**
+     * get all failed jobs info
+     * @return array
+     */
+    public function getFailedJobsInfo()
+    {
+        $data = [];
+        $kw = static::$typeKeywordMap['failed'];
+
+        if ($lines = $this->getMatchedLines($kw)) {
+            $data = $this->parseFailedLines($lines);
+
+            if ($this->config['cacheData'] && ($dir = $this->config['cacheDir'])) {
+                $filename = basename($this->file);
+                file_put_contents($dir . '/' . $filename, $data);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * get failed job detail info(contain Exception trace info)
+     * @return array
+     */
+    public function getFailedJobDetial($jobId)
+    {
+        exec("cat $this->file | grep -A 15 '$jobId'", $lines);
+
+        return $lines;
+    }
+
+    /**
+     * get failed job exception message and trace info
+     * @return array
+     */
+    public function getFailedJobExceptionTrace($jobId)
+    {
+        exec("cat $this->file | grep -A 15 '$jobId) Failed'", $lines);
+
+        return $lines;
     }
 
     /**
@@ -115,7 +159,7 @@ class LogParser
     /**
      * @return array
      */
-    public function getErrorMessages()
+    public function getErrorsInfo()
     {
         return $this->getMatchedLines(self::MATCH_ERROR);
     }
@@ -152,7 +196,7 @@ class LogParser
      * @param array $lines
      * @return mixed
      */
-    protected function parseLines(array $lines)
+    protected function parseStartedLines(array $lines)
     {
         if (!$lines) {
             return null;
@@ -194,7 +238,12 @@ class LogParser
             return [];
         }
 
-        $detail = [];
+        $detail = [
+            'id' => $jobId,
+            'workload' => '!No Data!',
+            'err_msg' => '',
+            'err_trace' => '',
+        ];
 
         if (strpos($str, 'workload:')) {
             preg_match("/Job workload: (.*)\n.*handler\((\S+)\).*\n\[(.*)\] \[Worker/", $str, $matches);
@@ -213,12 +262,22 @@ class LogParser
                 throw new \RuntimeException("Log line format is error! cannot parse it.", __LINE__);
             }
 
-            $detail['workload'] = '!No Data!';
             $detail['handler'] = $matches[1];
             $detail['end_time'] = $matches[2];
         }
 
-        $detail['status'] = strpos($str, 'been completed') ? 'completed' : 'failed';
+        // failed ?
+        if (!$detail['status'] = strpos($str, 'been completed')) {
+            $errLines = $this->getFailedJobExceptionTrace($jobId);
+
+            $msgLine = array_shift($errLines);
+            preg_match("/Exception: (.+)/", $msgLine, $ms);
+            $detail['err_msg'] = trim($ms[1]);
+
+            $errLines = array_filter(preg_replace("/.+\[Worker:\d+\].+/", '', $errLines));
+            array_shift($errLines);
+            $detail['err_trace'] = implode("\n", $errLines);
+        }
 
         return $detail;
     }

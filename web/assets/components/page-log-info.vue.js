@@ -21,7 +21,7 @@ components.pageLogInfo = {
     <h4>Job statistics of the date: <span v-show="selectDate" class="text-success">{{ selectDate }}</span> <hr></h4>
 
     <!-- Simple -->
-    <b-card class="mb-2" v-if="startTimes">
+    <b-card class="mb-2">
         <ul>
             <li>Worker (re)start times of the day: <code>{{ startTimes }}</code></li>
             <li>Job execute statistics:
@@ -29,7 +29,7 @@ components.pageLogInfo = {
         completed - <code>{{ typeCounts.completed }}</code>
         failed - <code>{{ typeCounts.failed }}</code></li>
         </ul>
-      
+
     </b-card>
 
     <hr v-show="jobsInfo.length">
@@ -65,7 +65,7 @@ components.pageLogInfo = {
 
       <div class="justify-content-center row my-1">
         <b-form-fieldset horizontal label="Rows per page" class="col-4" :label-size="7">
-          <b-form-select :options="[{text:10,value:10},{text:15,value:15}]" v-model="perPage">
+          <b-form-select :options="[{text:15,value:15},{text:20,value:20}]" v-model="perPage">
           </b-form-select>
         </b-form-fieldset>
         <b-form-fieldset horizontal label="Pagination" class="col-8" :label-size="2">
@@ -74,14 +74,19 @@ components.pageLogInfo = {
       </div>
 
       <!-- Modal Component @shown="clearName" -->
-      <b-modal ok-only id="d-modal" title="Job Detail" @change="changeModal" v-if="jobDetail">
-        JobId: <code>{{jobDetail.id}}</code>
+      <b-modal ok-only id="d-modal" size="lg" title="Job Detail" @change="changeModal" v-if="jobDetail">
+        <h5>Id: <code>{{jobDetail.id}}</code></h5>
+
         <ul>
-          <li>Handler {{jobDetail.handler}}</li>
+          <li>Handler <code>{{jobDetail.handler}}</code></li>
+          <li>Status   <span class="badge badge-success">{{jobDetail.status ? 'Completed' : 'Failed'}}</span></li>
           <li>Start Time {{jobDetail.start_time}}</li>
           <li>End Time {{jobDetail.end_time}}</li>
-          <li>Status   {{jobDetail.status}}</li>
           <li>Workload  <code>{{jobDetail.workload}}</code></li>
+          <li v-show="jobDetail.err_msg">Exception Message: <br><code>{{ jobDetail.err_msg }}</code></li>
+          <li v-show="jobDetail.err_trace">Exception Trace:
+            <pre><code>{{ jobDetail.err_trace }}</code></pre>
+          </li>
         </ul>
 
       </b-modal>
@@ -106,7 +111,11 @@ components.pageLogInfo = {
       cache: true,
       selectDate: '',
       startTimes: 0,
-      typeCounts: null,
+      typeCounts: {
+        started : 0,
+        completed : 0,
+        failed : 0
+      },
       jobsInfo: [],
       infoFields: { // time role pid level job_name job_id exec_count
         time: {label: "Start Time"},
@@ -125,7 +134,7 @@ components.pageLogInfo = {
         workload: {label: "Workload"}
       },
       curPage: 1,
-      perPage: 10,
+      perPage: 15,
       filter: null
     }
   },
@@ -137,8 +146,9 @@ components.pageLogInfo = {
     },
     showDetail: function (job) {
       console.log(job)
-      this.fetchDetail(job)
-      this.$root.$emit('show::modal', 'd-modal')
+      this.fetchDetail(job, function (self) {
+        self.$root.$emit('show::modal', 'd-modal')
+      })
     },
     fetch() {
       const self = this
@@ -184,13 +194,14 @@ components.pageLogInfo = {
           vm.alert('network error(catched)!')
       })
     },
-    fetchDetail(job) {
+    fetchDetail(job, onFetched) {
       const self = this
       const jid = job.item.job_id
 
-      if (session.has(jid)) {
+      if (this.cache && session.has(jid)) {
         self.jobDetail = session.getJson(jid)
 
+        onFetched(self)
         return
       }
 
@@ -210,11 +221,12 @@ components.pageLogInfo = {
           }
 
           let detail = data.data
-          detail.id = jid
           detail.start_time = job.item.time
 
           self.jobDetail = detail
           session.setJson(jid, detail)
+
+          onFetched(self)
       })
         .catch(err => {
           console.error(err)

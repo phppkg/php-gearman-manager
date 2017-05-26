@@ -23,6 +23,16 @@ class Helper
     }
 
     /**
+     * @return string
+     */
+    public static function formatMicrotime($mTime)
+    {
+        list($ts, $ms) = explode('.', sprintf('%.4f', $mTime));
+
+        return date('Y/m/d H:i:s', $ts) . '.' . $ms;
+    }
+
+    /**
      * Parses $GLOBALS['argv'] for parameters and assigns them to an array.
      *
      * Supports:
