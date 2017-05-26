@@ -329,7 +329,13 @@ php -S 127.0.0.1:5888 -t web
 
 然后打开浏览器访问 http://127.0.0.1:5888 效果：
 
-![](web/assets/preview.png)
+- server,jobs info
+
+![](web/assets/svr-info.png)
+
+- see log
+
+![](web/assets/log-info1.png)
 
 ## License
 

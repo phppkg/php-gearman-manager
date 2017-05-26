@@ -2,6 +2,8 @@
 
 a php gearman workers manager.
 
+> [中文README](README_zh.md)
+
 Can start and manage multiple gearman worker, you can set the maximum execution time of 
 each worker and the maximum number of job execution, after reaching the set value.
 Worker will automatically restart the process, prevent the dead
@@ -176,6 +178,28 @@ class EchoJob extends Job
 use `php gwm.php -h` see more help information
 
 run: `php gwm.php`
+
+## monitor web panel
+
+you can see the server, jobs, workers info by built-in tool.
+
+run：
+
+```bash
+bash server.sh
+// OR
+php -S 127.0.0.1:5888 -t web
+```
+
+open the url http://127.0.0.1:5888 
+
+- server,jobs info
+
+![](web/assets/svr-info.png)
+
+- see log
+
+![](web/assets/log-info1.png)
 
 ## License
 
