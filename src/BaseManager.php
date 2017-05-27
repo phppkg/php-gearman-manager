@@ -261,8 +261,8 @@ abstract class BaseManager implements ManagerInterface
 
         // If we want run as daemon, fork here and exit
         if ($this->config['daemon']) {
-            $this->stdout('Run the worker manager in the background');
             $this->runAsDaemon();
+            $this->stdout("Run the worker manager in the background(PID: $this->pid)");
         }
 
         // save Pid File

@@ -25,7 +25,7 @@ class Helper
     /**
      * @return string
      */
-    public static function formatMicrotime($mTime)
+    public static function formatMicroTime($mTime)
     {
         list($ts, $ms) = explode('.', sprintf('%.4f', $mTime));
 

@@ -272,8 +272,8 @@ class LiteManager extends BaseManager
 
         $this->log("doJob: $name($h) Statistics", self::LOG_WORKER_INFO, [
             'status'    => $status,
-            'run_time'  => Helper::formatMicrotime($runTime),
-            'end_time'  => Helper::formatMicrotime($endTime),
+            'run_time'  => Helper::formatMicroTime($runTime),
+            'end_time'  => Helper::formatMicroTime($endTime),
             'exec_count' => $this->jobExecCount,
         ]);
 
