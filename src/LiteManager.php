@@ -20,7 +20,7 @@ class LiteManager extends BaseManager
     /**
      * add a job handler
      * @param string $name The job name
-     * @param callable $handler The job handler
+     * @param callable|JobInterface $handler The job handler
      * @param array $opts The job options. more @see $jobsOpts property.
      * options allow: [
      *  'timeout' => int

@@ -37,6 +37,7 @@ class StdApiProxyJob extends RequestProxyJob
      * StdApiProxyJob constructor.
      * @param string $baseUrl
      * @param string $path
+     * @param string $method
      */
     public function __construct($baseUrl, $path, $method = 'GET')
     {
@@ -55,11 +56,9 @@ class StdApiProxyJob extends RequestProxyJob
     {
         if (isset($payload['_method'])) {
             $this->method = trim($payload['_method']);
+            unset($payload['_method']);
         }
 
-        $this->path = trim($payload['_uri']);
-
-        unset($payload['_uri'], $payload['_method']);
         return true;
     }
 }

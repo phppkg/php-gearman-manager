@@ -8,6 +8,7 @@
 
 namespace inhere\gearman;
 
+use inhere\gearman\jobs\JobInterface;
 use inhere\gearman\tools\Telnet;
 use inhere\gearman\traits;
 
@@ -294,7 +295,7 @@ abstract class BaseManager implements ManagerInterface
     /**
      * add a job handler (alias of the `addHandler`)
      * @param string $name
-     * @param callable $handler
+     * @param callable|JobInterface $handler
      * @param array $opts
      * @return bool
      */
@@ -306,7 +307,7 @@ abstract class BaseManager implements ManagerInterface
     /**
      * add a job handler
      * @param string $name The job name
-     * @param callable $handler The job handler
+     * @param callable|JobInterface $handler The job handler
      * @param array $opts The job options. more @see $jobsOpts property.
      * options allow: [
      *  'timeout' => int

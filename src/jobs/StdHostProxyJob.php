@@ -58,11 +58,12 @@ class StdHostProxyJob extends RequestProxyJob
 
         if (isset($payload['_method'])) {
             $this->method = trim($payload['_method']);
+            unset($payload['_method']);
         }
 
         $this->path = trim($payload['_uri']);
 
-        unset($payload['_uri'], $payload['_method']);
+        unset($payload['_uri']);
         return true;
     }
 }
