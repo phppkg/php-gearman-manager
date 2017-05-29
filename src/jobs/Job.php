@@ -8,8 +8,6 @@
 
 namespace inhere\gearman\jobs;
 
-use inhere\gearman\ManagerInterface;
-
 /**
  * Class Job
  * @package inhere\gearman\jobs
@@ -56,7 +54,6 @@ abstract class Job implements JobInterface
         $result = false;
         $this->id = $job->handle();
         $this->name = $job->functionName();
-        $this->manager = $manager;
 
         try {
             if (false !== $this->beforeRun($workload, $job)) {
