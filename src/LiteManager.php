@@ -88,7 +88,7 @@ class LiteManager extends BaseManager
 
         // init opts
         $opts = array_merge(self::$defaultJobOpt, $this->getJobOpts($name), $opts);
-        $opts['focus_on'] = (bool)$opts['focus_on'];
+        $opts['focus_on'] = $this->config['disable_focus'] ? false : (bool)$opts['focus_on'];
 
         if (!$opts['focus_on']) {
             $minCount = max($this->doAllWorkerNum, 1);

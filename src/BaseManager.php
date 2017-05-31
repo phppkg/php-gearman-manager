@@ -106,6 +106,7 @@ abstract class BaseManager implements ManagerInterface
         'worker_num' => 4,
 
         'no_test' => false,
+        'disable_focus' => false,
 
         // Workers will only live for 1 hour, after will auto restart.
         'max_lifetime' => 3600,
@@ -435,6 +436,7 @@ $sOptions
     -d,--daemon        Daemon, detach and run in the background
        --jobs          Only register the assigned jobs, multi job name separated by commas(',')
        --no-test       Not add test handler, when job name prefix is 'test'.(eg: test_job)
+       --disable-focus Diable focus on job for worker
 
   status
     --cmd COMMAND      Send command when connect to the job server. allow:status,workers.(default:status)

@@ -191,6 +191,11 @@ trait OptionAndConfigTrait
             $this->config['no_test'] = true;
         }
 
+        // disable focus
+        if (isset($opts['disable-focus'])) {
+            $this->config['disable_focus'] = true;
+        }
+
         // only added jobs
         if (isset($opts['jobs']) && ($added = trim($opts['jobs'], ','))) {
             $this->config['added_jobs'] = strpos($added, ',') ? explode(',', $added) : [$added];
