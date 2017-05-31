@@ -52,44 +52,29 @@ trait ProcessMessageTrait
             return false;
         }
 
-        // 父进程读写管道
+        // 读取管道数据
         $string = fread($this->pipe, $bufferSize);
-        $json = json_decode($string);
-        $cmd = $json->command;
+        $data = json_decode($string);
 
-        if ($cmd === 'status') {
-            fwrite($this->pipe, json_encode([
-                'status' => 0,
-                'data' => 'received data: ' . json_encode($json->data),
-            ]));
-        }
-
-        return true;
+        return $data;
     }
 
     /**
-     * @deprecated unused
-     * @param $command
-     * @param $message
-     * @param bool $readResult
-     * @return bool|int|string
+     * @param string $command
+     * @param string|array $data
+     * @return bool|int
      */
-    protected function sendMessage($command, $message, $readResult = true)
+    protected function sendMessage($command, $data)
     {
         if (!$this->pipe) {
             return false;
         }
-        // $pid = $this->masterPid;
 
-        // 子进程读写管道
+        // 写入数据到管道
         $len = fwrite($this->pipe, json_encode([
             'command' => $command,
-            'data' => $message,
+            'data' => $data,
         ]));
-
-        if ($len && $readResult) {
-            return fread($this->pipe, 1024);
-        }
 
         return $len;
     }
