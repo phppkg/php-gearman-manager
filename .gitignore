@@ -1,4 +1,5 @@
 .idea/
+logs/
 .phpintel/
 !README.md
 !.gitkeep

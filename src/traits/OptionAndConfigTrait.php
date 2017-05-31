@@ -102,7 +102,12 @@ trait OptionAndConfigTrait
 
         // check master process
         if (!$isRunning) {
-            $this->stderr("The worker manager is not running. can not execute the command: {$command}\n", true, -__LINE__);
+            // now, restart is alias of the start
+            if ($command === 'restart') {
+                return true;
+            }
+
+            $this->stderr("The worker manager is not running. cannot execute the command: {$command}\n", true, -__LINE__);
         }
 
         // switch command

@@ -273,11 +273,10 @@ trait ProcessManageTrait
             default: // at parent
                 $text = $isFirst ? 'Start' : 'Restart';
                 $this->log("Started worker #$workerId with PID $pid ($text) (Jobs:" . implode(',', $jobAry) . ')', self::LOG_PROC_INFO);
-                $this->workers[$pid] = array(
-                    'id' => $workerId,
+                $this->setWorkerInfo($workerId,[
+                    'pid' => $pid,
                     'jobs' => $jobAry,
-                    'start_time' => time(),
-                );
+                ]);
         }
     }
 
@@ -300,22 +299,23 @@ trait ProcessManageTrait
             $exitedPid = pcntl_wait($status, WNOHANG);
 
             // We run other workers, make sure this is a worker
-            if (isset($this->workers[$exitedPid])) {
-                /*
-                 * If they have exited, remove them from the workers array
-                 * If we are not stopping work, start another in its place
-                 */
-                if ($exitedPid) {
-                    $workerId = $this->workers[$exitedPid]['id'];
-                    $workerJobs = $this->workers[$exitedPid]['jobs'];
-                    $exitCode = pcntl_wexitstatus($status);
-                    unset($this->workers[$exitedPid]);
+            /*
+             * If they have exited, remove them from the workers array
+             * If we are not stopping work, start another in its place
+             */
+            if ($worker = $this->getWorkerInfoByPid($exitedPid)) {
+                $workerId = $worker['id'];
+                $workerJobs = $worker['jobs'];
+                $exitCode = pcntl_wexitstatus($status);
 
-                    $this->logWorkerStatus($exitedPid, $workerJobs, $exitCode);
+                $this->logWorkerStatus($worker, $exitCode);
 
-                    if (!$this->stopWork) {
-                        $this->startWorker($workerJobs, $workerId, false);
-                    }
+                if (!$this->stopWork) {
+                    $this->startWorker($workerJobs, $workerId, false);
+                    $this->saveStatData('worker', $workerId);
+                } else {
+                    // is required. because while dep `count($this->workers)`
+                    unset($this->workers[$workerId]);
                 }
             }
 
@@ -323,14 +323,13 @@ trait ProcessManageTrait
                 if (time() - $this->meta['stop_time'] > 60) {
                     $this->log('Workers have not exited, force killing.', self::LOG_PROC_INFO);
                     $this->stopWorkers(SIGKILL);
-                    // $this->killProcess($pid, SIGKILL);
                 }
             } else {
                 // If any workers have been running 150% of max run time, forcibly terminate them
-                foreach ($this->workers as $pid => $worker) {
+                foreach ($this->workers as $id => $worker) {
                     if (!empty($worker['start_time']) && time() - $worker['start_time'] > $this->maxLifetime * 1.5) {
-                        $this->logWorkerStatus($pid, $worker['jobs'], self::CODE_MANUAL_KILLED);
-                        $this->killProcess($pid, SIGKILL);
+                        $this->logWorkerStatus($worker, self::CODE_MANUAL_KILLED);
+                        $this->killProcess($worker['pid'], SIGKILL);
                     }
                 }
             }
@@ -368,7 +367,7 @@ trait ProcessManageTrait
             }
 
             if (time() - $startTime > $timeout) {
-                $this->stdout("Stop the manager process(PID:$pid) failed(timeout)!", true, -2);
+                $this->stdout("\nStop the manager process(PID:$pid) failed(timeout)!", true, -2);
                 break;
             }
 
@@ -422,7 +421,8 @@ trait ProcessManageTrait
 
         $this->log("Stopping workers({$signals[$signal]}) ...", self::LOG_PROC_INFO);
 
-        foreach ($this->workers as $pid => $worker) {
+        foreach ($this->workers as $id => $worker) {
+            $pid = $worker['pid'];
             $this->log("Stopping worker #{$worker['id']}(PID:$pid)", self::LOG_PROC_INFO);
 
             // send exit signal.
@@ -433,27 +433,28 @@ trait ProcessManageTrait
     }
 
     /**
-     * @param int $pid
-     * @param array $jobs
+     * @param array $worker
      * @param int $statusCode
      */
-    protected function logWorkerStatus($pid, $jobs, $statusCode)
+    protected function logWorkerStatus($worker, $statusCode)
     {
-        $jobStr = implode(',', $jobs);
+        $wid = $worker['id'];
+        $pid = $worker['pid'];
+        $jobStr = implode(',', $worker['jobs']);
 
         switch ((int)$statusCode) {
             case self::CODE_MANUAL_KILLED:
-                $message = "Worker (PID:$pid) has been running too long. Forcibly killing process. (Jobs:$jobStr)";
+                $message = "Worker #$wid(PID:$pid) has been running too long. Forcibly killing process. (Jobs:$jobStr)";
                 break;
             case self::CODE_NORMAL_EXITED:
-                $message = "Worker (PID:$pid) normally exited. (Jobs:$jobStr)";
+                $message = "Worker #$wid(PID:$pid) normally exited. (Jobs:$jobStr)";
                 break;
             case self::CODE_CONNECT_ERROR:
-                $message = "Worker (PID:$pid) connect to job server failed. exiting";
+                $message = "Worker #$wid(PID:$pid) connect to job server failed. exiting";
                 $this->stopWork();
                 break;
             default:
-                $message = "Worker (PID:$pid) died unexpectedly with exit code $statusCode. (Jobs:$jobStr)";
+                $message = "Worker #$wid(PID:$pid) died unexpectedly with exit code $statusCode. (Jobs:$jobStr)";
                 break;
         }
 
@@ -513,32 +514,155 @@ trait ProcessManageTrait
     }
 
     /**
-     * getWorkerId
-     * @param  int $pid
-     * @return int
+     * @param string $file
+     * @return array|bool|mixed
      */
-    public function getWorkerId($pid)
+    protected function loadStatData($file)
     {
-        return isset($this->workers[$pid]) ? $this->workers[$pid]['id'] : 0;
+        if (!is_file($file)) {
+            return false;
+        }
+
+        $text = trim(file_get_contents($file));
+
+        return $text ? json_decode($text, true) : false;
     }
 
     /**
-     * getPidByWorkerId
-     * @param  int $id
+     * save(create/update) stat data to file
+     * @param string $role
+     * @param int $workerId
+     * @return bool|int
+     */
+    protected function saveStatData($role = 'all', $workerId = -1)
+    {
+        if (!$file = $this->config['stat_file']) {
+            return false;
+        }
+
+        if (!$data = $this->loadStatData($file)) {
+            $data = [
+                'master' => [],
+                'workers' => [],
+                'created_at' => time(),
+                'updated_at' => 0,
+            ];
+        }
+
+        switch ($role) {
+            case 'master':
+                $data['master'] = $this->meta;
+                $data['updated_at'] = time();
+                break;
+
+            case 'worker':
+                if (!isset($this->workers[$workerId])) {
+                    return false;
+                }
+
+                $data['workers'][$workerId] = $this->workers[$workerId];
+                $data['updated_at'] = time();
+                break;
+
+            // init all data. on (re)start
+            default:
+                $data['master'] = $this->meta;
+                $data['workers'] = $this->workers;
+
+                if (file_exists($file)) {
+                    @rename($file, $file . '.' . date('YmdH'));
+                }
+
+                break;
+        }
+
+        if (!file_exists($file) && !is_dir(dirname($file))) {
+            @mkdir(dirname($file), 0755, true);
+        }
+
+        return file_put_contents($file, json_encode($data));
+    }
+
+    /**
+     * getWorkerId
+     * @param  int $workerId
      * @return int
      */
-    public function getPidByWorkerId($id)
+    public function getPidByWorkerId($workerId)
     {
-        $thePid = 0;
+        return isset($this->workers[$workerId]) ? $this->workers[$workerId]['pid'] : 0;
+    }
 
-        foreach ($this->workers as $pid => $item) {
-            if ($id === $item['id']) {
-                $thePid = $pid;
+    /**
+     * @param $workerId
+     * @return null|array
+     */
+    public function getWorkerInfo($workerId)
+    {
+        return isset($this->workers[$workerId]) ? $this->workers[$workerId] : null;
+    }
+
+    /**
+     * getWorkerIdByPid
+     * @param  int $pid
+     * @return int
+     */
+    public function getWorkerIdByPid($pid)
+    {
+        $workerId = -1;
+
+        foreach ($this->workers as $wid => $item) {
+            if ($pid === $item['pid']) {
+                $workerId = $wid;
                 break;
             }
         }
 
-        return $thePid;
+        return $workerId;
+    }
+
+    /**
+     * getWorkerIdByPid
+     * @param  int $pid
+     * @return null|array
+     */
+    public function getWorkerInfoByPid($pid)
+    {
+        $worker = null;
+
+        foreach ($this->workers as $item) {
+            if ($pid === $item['pid']) {
+                $worker = $item;
+                break;
+            }
+        }
+
+        return $worker;
+    }
+
+    /**
+     * @param int $workerId
+     * @param array $info
+     */
+    protected function setWorkerInfo($workerId, array $info)
+    {
+        if (!isset($this->workers[$workerId])) {
+            $this->workers[$workerId] = array_merge([
+                'id' => $workerId,
+                'pid' => 0,
+                'jobs' => [],
+                'start_time' => time(),
+                'prev_start_time' => 0,
+                'start_times' => 1,
+            ], $info);
+        } else {
+            $old = $this->workers[$workerId];
+            $old['start_times']++;
+            $old['prev_start_time'] = $old['start_time'];
+            $old['start_time'] = time();
+
+            $this->workers[$workerId] = array_merge($old, $info);
+        }
     }
 
     /**

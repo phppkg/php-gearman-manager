@@ -67,7 +67,6 @@ abstract class BaseManager implements ManagerInterface
     protected $meta = [
         'start_time' => 0,
         'stop_time' => 0,
-        'start_times' => 0,
     ];
 
     ///////// config //////////
@@ -220,10 +219,12 @@ abstract class BaseManager implements ManagerInterface
 
         // start workers and set up a running environment
         $this->startWorkers();
+        $this->saveStatData();
 
         // start worker monitor
         $this->startWorkerMonitor();
 
+        $this->saveStatData('master');
         $this->afterStart();
     }
 
