@@ -77,66 +77,6 @@ trait ProcessManageTrait
     protected $jobExecCount = 0;
 
     /**
-     * pipeHandle
-     * @var resource
-     */
-    protected $pipeHandle;
-
-    /**
-     * @deprecated unused
-     * param $workerId
-     * param $message
-     * @return bool
-     */
-    protected function pipeMessage()
-    {
-        if (!$this->pipeHandle) {
-            return false;
-        }
-
-        // 父进程读写管道
-        $string = fread($this->pipeHandle, 1024);
-        $json = json_decode($string);
-        $cmd = $json->command;
-
-        if ($cmd === 'status') {
-            fwrite($this->pipeHandle, json_encode([
-                'status' => 0,
-                'data' => 'received data: ' . json_encode($json->data),
-            ]));
-        }
-
-        return true;
-    }
-
-    /**
-     * @deprecated unused
-     * @param $command
-     * @param $message
-     * @param bool $readResult
-     * @return bool|int|string
-     */
-    protected function sendMessage($command, $message, $readResult = true)
-    {
-        if (!$this->pipeHandle) {
-            return false;
-        }
-        // $pid = $this->masterPid;
-
-        // 子进程读写管道
-        $len = fwrite($this->pipeHandle, json_encode([
-            'command' => $command,
-            'data' => $message,
-        ]));
-
-        if ($len && $readResult) {
-            return fread($this->pipeHandle, 1024);
-        }
-
-        return $len;
-    }
-
-    /**
      * Daemon, detach and run in the background
      */
     protected function runAsDaemon()

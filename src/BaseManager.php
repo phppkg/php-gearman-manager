@@ -23,6 +23,7 @@ abstract class BaseManager implements ManagerInterface
     use traits\OptionAndConfigTrait;
     use traits\ProcessControlTrait;
     use traits\ProcessManageTrait;
+    use traits\ProcessMessageTrait;
 
     /**
      * @var string
