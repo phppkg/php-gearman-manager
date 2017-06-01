@@ -289,17 +289,17 @@ trait ProcessManageTrait
      */
     protected function stopMaster($pid, $quit = true)
     {
-        $this->stdout("Stop the manager(PID:$pid)");
+        $this->stdout("Stop the manager(PID:$pid)", false);
 
         // do stop
         // 向主进程发送此信号(SIGTERM)服务器将安全终止；也可在PHP代码中调用`$server->shutdown()` 完成此操作
         if (!$this->killProcess($pid, SIGTERM)) {
-            $this->stdout("Stop the manager process(PID:$pid) failed!");
+            $this->stdout("\nSend stop signal fail! stop failed.");
         }
 
         $startTime = time();
         $timeout = 30;
-        $this->stdout("Stopping .", false);
+        $this->stdout(' .', false);
 
         // wait exit
         while (true) {
@@ -308,7 +308,7 @@ trait ProcessManageTrait
             }
 
             if (time() - $startTime > $timeout) {
-                $this->stdout("\nStop the manager process(PID:$pid) failed(timeout)!", true, -2);
+                $this->stdout(" Failed\nStop the manager process(PID:$pid) failed(timeout)!", true, -2);
                 break;
             }
 
@@ -317,7 +317,7 @@ trait ProcessManageTrait
         }
 
         // stop success
-        $this->stdout("\nThe manager stopped.\n");
+        $this->stdout(" Stopped.\n");
 
         if ($quit) {
             $this->quit();

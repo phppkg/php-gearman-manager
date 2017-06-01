@@ -39,11 +39,18 @@ php 的 gearman workers 管理工具。
 
 ## 基本命令
 
+注意：通过ssh远程执行命令时，须在后面追加 ` > /dev/null`. 不然 `ssh` 命令会一直挂起。
+
+例如：
+
+> `ssh root@IP 'php /project_path/bin/manager.php -e dev -d restart > /dev/null'`
+
 - 启动
 
 ```bash
 // 启动
 php examples/gwm.php 
+php examples/gwm.php start
 // 后台运行
 php examples/gwm.php -d
 php examples/gwm.php --daemon
@@ -56,6 +63,8 @@ php examples/gwm.php stop
 ```
 
 - 重启
+
+若没有启动。则会直接当作 start 命令
 
 ```bash
 php examples/gwm.php restart
