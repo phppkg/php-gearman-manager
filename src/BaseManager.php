@@ -205,7 +205,7 @@ abstract class BaseManager implements ManagerInterface
         $this->isMaster = true;
         $this->stopWork = false;
         $this->meta['start_time'] = time();
-        $this->setProcessTitle(sprintf("php-gwm: master process%s (%s)", $this->getShowName(), getcwd() . '/' . $this->fullScript));
+        $this->setProcessTitle(sprintf("php-gwm: master process%s (%s)", $this->getShowName(), $this->fullScript));
 
         // prepare something for start
         $this->prepare();
