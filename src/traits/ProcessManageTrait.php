@@ -87,6 +87,7 @@ trait ProcessManageTrait
             // disable trigger stop event in the __destruct()
             $this->isMaster = false;
             $this->clear();
+            $this->stdout("Run the worker manager in the background(PID: $pid)");
             $this->quit();
         }
 
