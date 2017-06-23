@@ -121,7 +121,7 @@ PUBLIC OPTIONS:
   -c CONFIG          Load a custom worker manager configuration file
   -s HOST[:PORT]     Connect to server HOST and optional PORT, multi server separated by commas(',')
 
-  -n NUMBER          Start NUMBER workers that do all jobs
+  -n NUMBER          Start NUMBER workers that do all jobs // 启动多少个worker来做job。这些worker是随机接收并处理job。如需对某个job特殊处理，需单独配置它
 
   -u USERNAME        Run workers as USERNAME
   -g GROUP_NAME      Run workers as user's GROUP NAME
@@ -129,7 +129,7 @@ PUBLIC OPTIONS:
   -l LOG_FILE        Log output to LOG_FILE or use keyword 'syslog' for syslog support
   -p PID_FILE        File to write master process ID out to
 
-  -r NUMBER          Maximum run job iterations per worker // 启动多少个worker来做job。这些worker是随机接收并处理job。如需对某个job特殊处理，需单独配置它
+  -r NUMBER          Maximum run job iterations per worker 
   -x SECONDS         Maximum seconds for a worker to live
   -t SECONDS         Number of seconds gearmand server should wait for a worker to complete work before timing out
 

@@ -351,4 +351,9 @@ class JobClient
 
         return null;
     }
+
+    public function __destruct()
+    {
+        $this->client = null;
+    }
 }
