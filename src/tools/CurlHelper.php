@@ -166,7 +166,7 @@ class CurlHelper
         $curlOptions[CURLOPT_TIMEOUT] = $this->config['timeout'];
         $curlOptions[CURLOPT_CONNECTTIMEOUT] = $this->config['timeout'];
 
-        $curlOptions[CURLOPT_ENCODING] = ''; // gzip
+        $curlOptions[CURLOPT_ENCODING] = 'gzip'; // gzip
 
         $curlOptions[CURLOPT_FOLLOWLOCATION] = true;
         $curlOptions[CURLOPT_MAXREDIRS] = 5;

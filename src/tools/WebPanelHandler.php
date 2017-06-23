@@ -165,11 +165,11 @@ class WebPanelHandler
 
         try {
             $lp = new LogParser($file);
-            // var_dump($lp->getWorkerStartTimes(),$lp->getTypeCounts(),$lp->getJobsInfo());
+            // var_dump($lp->getWorkerStartTimes(),$lp->getTypeCounts(),$lp->getJobsStatistics());
             $data = [
                 'startTimes' => $lp->getWorkerStartTimes(),
                 'typeCounts' => $lp->getTypeCounts(),
-                'jobsInfo' => $lp->getJobsInfo(),
+                'jobsInfo' => $lp->getJobsStatistics(),
             ];
         } catch (\Exception $e) {
             $code = $e->getCode();

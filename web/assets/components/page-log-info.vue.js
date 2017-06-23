@@ -26,7 +26,7 @@ components.pageLogInfo = {
             <li>Worker (re)start times of the day: <code>{{ startTimes }}</code></li>
             <li>Job execute statistics:
         started - <code>{{ typeCounts.started }}</code>
-        completed - <code>{{ typeCounts.completed }}</code>
+        succeeded - <code>{{ typeCounts.completed }}</code>
         failed - <code>{{ typeCounts.failed }}</code></li>
         </ul>
 
@@ -58,6 +58,10 @@ components.pageLogInfo = {
         <template slot="worker" scope="item">
           Executed job <code>{{item.item.exec_count}}</code>(PID<code>{{item.item.pid}}</code>)
         </template>
+        <template slot="status" scope="item">
+          <span class="badge badge-success" v-show="item.value">Success</span>
+          <span class="badge badge-danger" v-show="!item.value">Fail</span>
+        </template>
         <template slot="actions" scope="item">
           <b-btn size="sm" variant="outline-info" @click="showDetail(item)"><i class="icon-eye"></i>Detail</b-btn>
         </template>
@@ -79,7 +83,10 @@ components.pageLogInfo = {
 
         <ul>
           <li>Handler <code>{{jobDetail.handler}}</code></li>
-          <li>Status   <span class="badge badge-success">{{jobDetail.status ? 'Completed' : 'Failed'}}</span></li>
+          <li>Status
+            <span class="badge badge-success" v-show="jobDetail.status">Success</span>
+            <span class="badge badge-danger" v-show="!jobDetail.status">Fail</span>
+          </li>
           <li>Start Time {{jobDetail.start_time}}</li>
           <li>End Time {{jobDetail.end_time}}</li>
           <li>Workload  <code>{{jobDetail.workload}}</code></li>
@@ -118,21 +125,17 @@ components.pageLogInfo = {
       },
       jobsInfo: [],
       infoFields: { // time role pid level job_name job_id exec_count
-        time: {label: "Start Time"},
+        log_time: {label: "Log Time"},
         worker: {label: "Worker"},
         level: {label: "Log Level", sortable: true },
         job_name: {label: "Job Name", sortable: true },
         job_id: {label: "Job ID", sortable: true },
+        status: {label: "Exec Status", sortable: true },
+        run_time: {label: "Start Time"},
+        end_time: {label: "End Time"},
         actions: {label: 'Actions'}
       },
       jobDetail: null,
-      detailFields: {
-        handler: {label: "Job Handler", sortable: true },
-        start_time: {label: "Start Time", sortable: true },
-        end_time: {label: "End Time", sortable: true },
-        status: {label: "Status", sortable: true },
-        workload: {label: "Workload"}
-      },
       curPage: 1,
       perPage: 15,
       filter: null

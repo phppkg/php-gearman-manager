@@ -18,8 +18,10 @@ $wph = new WebPanelHandler([
 ]);
 
 $route = $wph->get('r');
+// $route = 'jobs-info';
 // $route = $wph->getServerValue('REQUEST_URI');
 // var_dump($route, $_SERVER);
+
 
 $wph
     ->setRoutes([

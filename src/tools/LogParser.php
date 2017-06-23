@@ -37,6 +37,7 @@ class LogParser
         'started'   => 'Starting job',  // started jobs
         'completed' => 'been completed',     // completed jobs
         'failed'    => 'Failed to do',        // Failed jobs
+        'statistic' => ') Statistics {',  // statistic for each job
     ];
 
     /**
@@ -55,6 +56,27 @@ class LogParser
     }
 
     /**
+     * get all exec jobs info(by Statistics)
+     * @return array
+     */
+    public function getJobsStatistics()
+    {
+        $data = [];
+        $kw = static::$typeKeywordMap['statistic'];
+
+        if ($lines = $this->getMatchedLines($kw)) {
+            $data = $this->parseStatisticLines($lines);
+
+            if ($this->config['cacheData'] && ($dir = $this->config['cacheDir'])) {
+                $filename = basename($this->file);
+                file_put_contents("{$dir}/{$filename}.cache", $data);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * get all started jobs info
      * @return array
      */
@@ -65,11 +87,6 @@ class LogParser
 
         if ($lines = $this->getMatchedLines($kw)) {
             $data = $this->parseStartedLines($lines);
-
-            if ($this->config['cacheData'] && ($dir = $this->config['cacheDir'])) {
-                $filename = basename($this->file);
-                file_put_contents($dir . '/' . $filename, $data);
-            }
         }
 
         return $data;
@@ -86,11 +103,6 @@ class LogParser
 
         if ($lines = $this->getMatchedLines($kw)) {
             $data = $this->parseFailedLines($lines);
-
-            if ($this->config['cacheData'] && ($dir = $this->config['cacheDir'])) {
-                $filename = basename($this->file);
-                file_put_contents($dir . '/' . $filename, $data);
-            }
         }
 
         return $data;
@@ -190,6 +202,41 @@ class LogParser
     public function getWorkerStartTimes()
     {
         return (int)exec("cat $this->file | grep 'Started worker #0' | wc -l");
+    }
+
+    /**
+     * @param array $lines
+     * @return mixed
+     */
+    protected function parseStatisticLines($lines)
+    {
+        if (!$lines) {
+            return null;
+        }
+
+        $data = [];
+        foreach ($lines as $line) {
+            // eg: [2017/06/22 21:02:35.1896] [Worker:14794] [WORKER_INFO] doJob: updateToken(H:testing0:692) Statistics {"status":1,"run_time":"2017\/06\/22 21:02:35.1611","end_time":"2017\/06\/22 21:02:35.1895","exec_count":11}
+            $info = explode('] ', trim($line));
+            list($role, $pid) = explode(':', $info[1]);
+            preg_match('/^doJob: ([\w-]+)\((\S+)\).*Statistics (.*)/', $info[3], $matches);
+
+            if (!isset($matches[1],$matches[2],$matches[3])) {
+                throw new \RuntimeException("Log line format is error! cannot parse it.", __LINE__);
+            }
+
+            $stat = json_decode($matches[3], true);
+            $data[] = array_merge([
+                'log_time' => trim($info[0], '['),
+                'role' => trim($role, '['),
+                'pid' => $pid,// worker pid
+                'level' => trim($info[2], '['),
+                'job_name' => $matches[1],
+                'job_id' => $matches[2],
+            ], $stat);
+        }
+
+        return $data;
     }
 
     /**

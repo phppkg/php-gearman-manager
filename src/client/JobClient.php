@@ -87,13 +87,11 @@ class JobClient
     public $serializer = 'json';
 
     /**
-     * @var array|string
-     * [
-     *  '10.0.0.1', // use default port 4730
-     *  '10.0.0.2:7003'
-     * ]
+     * @var string
+     * // use default port 4730
+     * eg: '10.0.0.1,10.0.0.2:7003'
      */
-    public $servers = [];
+    public $servers = '127.0.0.1:4730';
 
     /**
      * JobClient constructor.
@@ -122,18 +120,43 @@ class JobClient
         }
 
         try {
-            $client = new \GearmanClient();
+            if (!$this->servers) {
+                $servers = ['127.0.0.1:4730'];
+            } elseif (strpos(trim($this->servers), ',')) {
+                $servers = explode(',', $this->servers);
+                shuffle($servers);
+            } else {
+                $servers = [trim($this->servers)];
+            }
 
-            if (!$servers = implode(',', (array)$this->servers)) {
-                $servers = $this->servers = '127.0.0.1:4730';
-                // $this->stdout("connect to the servers {$servers}");
+            $hasServer = false;
+            $client = new \GearmanClient();
+            // $client->addServers($servers);
+
+            foreach ($servers as $server) {
+                list($h, $p) = strpos($server, ':') ? explode(':', $server) : [$server, 4730];
+                $client->addServer($h, $p);
+
+                if (!@$client->ping('ping')) {
+                    $client = new \GearmanClient();
+                    continue;
+                }
+
+                $hasServer = true;
+            }
+
+            if (!$hasServer) {
+                throw new \RuntimeException("No server is available in the: {$this->servers}");
             }
 
             if ($this->timeout > 0) {
                 $client->setTimeout($this->timeout * 1000);
             }
 
-            $client->addServers($servers);
+            if ($er = $client->error()) {
+                throw new \RuntimeException("connect to the gearmand server error: {$er}");
+            }
+            $this->client = $client;
         } catch (\Exception $e) {
             if ($e->getMessage() !== 'Failed to set exception option') {
                 // $this->stdout("connect to the gearmand server error: {$e->getMessage()}", true, -500);
@@ -141,15 +164,7 @@ class JobClient
             }
         }
 
-        if ($er = $client->error()) {
-            // $this->stdout("connect to the gearmand server error: {$er}", true, -500);
-            throw new \RuntimeException("connect to the gearmand server error: {$er}");
-        }
-
-        $this->enable = true;
-        $this->client = $client;
-
-        return true;
+        return ($this->enable = true);
     }
 
     /**

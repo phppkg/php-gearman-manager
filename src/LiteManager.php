@@ -254,6 +254,10 @@ class LiteManager extends BaseManager
 
             $endTime = microtime(1);
 
+            if (is_bool($ret)) {
+                $status = (int)$ret;
+            }
+
             $this->log("doJob: $name($h) This job has been completed", self::LOG_WORKER_INFO);
             $this->trigger(self::EVENT_AFTER_WORK, [$job, $ret]);
         } catch (\Exception $e) {
