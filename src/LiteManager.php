@@ -221,8 +221,6 @@ class LiteManager extends BaseManager
      */
     public function doJob($job)
     {
-        $h = $job->handle();
-        $wl = $job->workload();
         $name = $job->functionName();
 
         if (!$handler = $this->getHandler($name)) {
@@ -231,6 +229,8 @@ class LiteManager extends BaseManager
         }
 
         $ret = null;
+        $h = $job->handle();
+        $wl = $job->workload();
         $this->jobExecCount++;
 
         $this->log("doJob: $name($h) Starting job, executed job count: {$this->jobExecCount}", self::LOG_WORKER_INFO);
