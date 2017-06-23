@@ -69,6 +69,12 @@ class JobClient
     public $debug = false;
 
     /**
+     * timeout(ms)
+     * @var int
+     */
+    public $timeout = 50;
+
+    /**
      * default retry times
      * @var int
      */
@@ -121,6 +127,10 @@ class JobClient
             if (!$servers = implode(',', (array)$this->servers)) {
                 $servers = $this->servers = '127.0.0.1:4730';
                 // $this->stdout("connect to the servers {$servers}");
+            }
+
+            if ($this->timeout > 0) {
+                $client->setTimeout($this->timeout * 1000);
             }
 
             $client->addServers($servers);
@@ -194,7 +204,7 @@ class JobClient
             return $this->doJob($funcName, $workload, $clientMethod, $unique);
         }
 
-        $this->trigger(self::EVENT_BEFORE_ADD, [$funcName, $workload, $clientMethod]);
+        $rawData = $workload;
 
         if (is_array($workload) || is_object($workload)) {
             if ($this->serializer === 'json') {
@@ -208,6 +218,7 @@ class JobClient
 
         $result = false;
         $retry = $retry < 0 || $retry > 30 ? (int)$this->retry : (int)$retry;
+        $this->trigger(self::EVENT_BEFORE_ADD, [$funcName, $rawData, $clientMethod]);
 
         try {
             while ($retry >= 0) {
@@ -218,7 +229,7 @@ class JobClient
                 } else {
                     $result = true;
                     $stat = $this->client->jobStatus($jobHandle);
-                    $this->trigger(self::EVENT_AFTER_ADD, [$funcName, $workload, $stat]);
+                    $this->trigger(self::EVENT_AFTER_ADD, [$funcName, $jobHandle, $workload, $stat, $retry]);
 
                     break;
                 }
@@ -226,7 +237,7 @@ class JobClient
                 $retry--;
             }
         } catch (\Exception $e) {
-            $this->trigger(self::EVENT_ERROR_ADD, [$e->getMessage(), $funcName, $workload]);
+            $this->trigger(self::EVENT_ERROR_ADD, [$e->getMessage(), $funcName, $jobHandle, $workload]);
             return false;
         }
 
