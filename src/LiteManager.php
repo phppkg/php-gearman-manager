@@ -245,11 +245,11 @@ class LiteManager extends BaseManager
             if ($handler instanceof JobInterface) {
                 $jobClass = get_class($handler);
                 $this->log("doJob: $name($h) Calling Job object handler($jobClass) do the job.", self::LOG_WORKER_INFO);
-                $ret = $handler->run($job->workload(), $job);
+                $ret = $handler->run($wl, $job);
             } else {
                 $jobFunc = is_string($handler) ? $handler : get_class($handler);
                 $this->log("doJob: $name($h) Calling function handler($jobFunc) do the job.", self::LOG_WORKER_INFO);
-                $ret = $handler($job->workload(), $job);
+                $ret = $handler($wl, $job);
             }
 
             $endTime = microtime(1);

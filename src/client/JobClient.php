@@ -125,8 +125,10 @@ class JobClient
 
             $client->addServers($servers);
         } catch (\Exception $e) {
-            // $this->stdout("connect to the gearmand server error: {$e->getMessage()}", true, -500);
-            throw $e;
+            if ($e->getMessage() !== 'Failed to set exception option') {
+                // $this->stdout("connect to the gearmand server error: {$e->getMessage()}", true, -500);
+                throw $e;
+            }
         }
 
         if ($er = $client->error()) {
