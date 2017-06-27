@@ -224,7 +224,7 @@ class LiteManager extends BaseManager
         $name = $job->functionName();
 
         if (!$handler = $this->getHandler($name)) {
-            $this->log("doJob: $name($h) Unknown job, The job name is not registered.", self::LOG_ERROR);
+            $this->log("doJob: Unknown job $name($h), The job name is not registered.", self::LOG_ERROR);
             return false;
         }
 
@@ -233,8 +233,8 @@ class LiteManager extends BaseManager
         $wl = $job->workload();
         $this->jobExecCount++;
 
-        $this->log("doJob: $name($h) Starting job, executed job count: {$this->jobExecCount}", self::LOG_WORKER_INFO);
-        $this->log("doJob: $name($h) Job workload: $wl", self::LOG_DEBUG);
+        $this->log("doJob: Starting job $name($h), executed job count: {$this->jobExecCount}", self::LOG_WORKER_INFO);
+        $this->log("doJob: Job workload $name($h): $wl", self::LOG_DEBUG);
         $this->trigger(self::EVENT_BEFORE_WORK, [$job]);
 
         $status = 1;
@@ -244,11 +244,11 @@ class LiteManager extends BaseManager
         try {
             if ($handler instanceof JobInterface) {
                 $jobClass = get_class($handler);
-                $this->log("doJob: $name($h) Calling Job object handler($jobClass) do the job.", self::LOG_WORKER_INFO);
+                $this->log("doJob: Calling $name($h) Job object handler($jobClass) do the job.", self::LOG_WORKER_INFO);
                 $ret = $handler->run($wl, $job);
             } else {
                 $jobFunc = is_string($handler) ? $handler : get_class($handler);
-                $this->log("doJob: $name($h) Calling function handler($jobFunc) do the job.", self::LOG_WORKER_INFO);
+                $this->log("doJob: Calling $name($h) function handler($jobFunc) do the job.", self::LOG_WORKER_INFO);
                 $ret = $handler($wl, $job);
             }
 
@@ -258,7 +258,7 @@ class LiteManager extends BaseManager
                 $status = (int)$ret;
             }
 
-            $this->log("doJob: $name($h) This job has been completed", self::LOG_WORKER_INFO);
+            $this->log("doJob: Completed job $name($h)", self::LOG_WORKER_INFO);
             $this->trigger(self::EVENT_AFTER_WORK, [$job, $ret]);
         } catch (\Exception $e) {
             $status = 0;
@@ -266,7 +266,7 @@ class LiteManager extends BaseManager
 
             $this->trigger(self::EVENT_ERROR_WORK, [$job, $e]);
             $this->log(sprintf(
-                "doJob: $name($h) Failed to do the job. Exception: %s On %s Line %s\nCode Trace:\n%s",
+                "doJob: Failed job $name($h). Exception: %s On %s Line %s\nCode Trace:\n%s",
                 $e->getMessage(),
                 $e->getFile(),
                 $e->getLine(),
@@ -274,7 +274,7 @@ class LiteManager extends BaseManager
             ), self::LOG_ERROR);
         }
 
-        $this->log("doJob: $name($h) Statistics", self::LOG_WORKER_INFO, [
+        $this->log("doJob: Statistics $name($h)", self::LOG_WORKER_INFO, [
             'status'    => $status,
             'run_time'  => Helper::formatMicroTime($runTime),
             'end_time'  => Helper::formatMicroTime($endTime),

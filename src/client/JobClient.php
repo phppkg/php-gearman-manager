@@ -130,15 +130,15 @@ class JobClient
             }
 
             $hasServer = false;
-            $client = new \GearmanClient();
-            // $client->addServers($servers);
+            $this->client = new \GearmanClient();
+            // $this->client->addServers($servers);
 
             foreach ($servers as $server) {
                 list($h, $p) = strpos($server, ':') ? explode(':', $server) : [$server, 4730];
-                $client->addServer($h, $p);
+                $this->client->addServer($h, $p);
 
-                if (!@$client->ping('ping')) {
-                    $client = new \GearmanClient();
+                if (!@$this->client->ping('ping')) {
+                    $this->client = new \GearmanClient();
                     continue;
                 }
 
@@ -150,13 +150,13 @@ class JobClient
             }
 
             if ($this->timeout > 0) {
-                $client->setTimeout($this->timeout * 1000);
+                $this->client->setTimeout($this->timeout);
             }
 
-            if ($er = $client->error()) {
+            if ($er = $this->client->error()) {
                 throw new \RuntimeException("connect to the gearmand server error: {$er}");
             }
-            $this->client = $client;
+
         } catch (\Exception $e) {
             if ($e->getMessage() !== 'Failed to set exception option') {
                 // $this->stdout("connect to the gearmand server error: {$e->getMessage()}", true, -500);
