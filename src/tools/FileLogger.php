@@ -50,6 +50,21 @@ class FileLogger
     protected static $allow = ['debug', 'info', 'notice', 'warning', 'error'];
 
     /**
+     * @var array
+     */
+    private static $cache = [];
+
+    /**
+     * @var int
+     */
+    private static $count = 0;
+
+    /**
+     * @var bool
+     */
+    private static $shutdownRegistered = false;
+
+    /**
      * @param string $basePath
      * @param string $splitType
      * @return FileLogger|static
@@ -57,7 +72,7 @@ class FileLogger
     public static function create($basePath, $splitType = '')
     {
         if (!self::$instance) {
-            self::$instance = new static($basePath, $splitType);
+            self::$instance = new self($basePath, $splitType);
         }
 
         return self::$instance;
@@ -127,11 +142,19 @@ class FileLogger
     private $splitType = '';
 
     /**
+     * 日志写入阀值
+     *  即是除了手动调用 self::flush() 之外，当 self::$cache 存储到了阀值时，就会自动写入一次
+     *  设为 0 则是每次记录都立即写入文件
+     * @var int
+     */
+    private $threshold = 100;
+
+    /**
      * FileLogger constructor.
      * @param string $basePath
      * @param string $splitType
      */
-    public function __construct($basePath, $splitType = '')
+    private function __construct($basePath, $threshold = 100, $splitType = '')
     {
         $this->basePath = $basePath;
 
@@ -139,7 +162,22 @@ class FileLogger
             $splitType = self::SPLIT_DAY;
         }
 
+        $this->threshold = (int)$threshold;
         $this->splitType = $splitType;
+
+        // register shutdown function
+        if (!self::$shutdownRegistered) {
+            register_shutdown_function(function () {
+                // make regular flush before other shutdown functions, which allows session data collection and so on
+                self::flush();
+
+                // make sure log entries written by shutdown functions are also flushed
+                // ensure "flush()" is called last when there are multiple shutdown functions
+                register_shutdown_function([self::class, 'flush'], true);
+            });
+
+            self::$shutdownRegistered = true;
+        }
     }
 
     /**
@@ -152,20 +190,52 @@ class FileLogger
      */
     public function log($msg, array $data = [], $filename = 'default.log', $type = 'info')
     {
-        $file = $this->genLogFile($filename, true);
-
         $log = sprintf(
             '[%s] [%s] %s %s' . PHP_EOL,
             date('Y-m-d H:i:s'), strtoupper($type), $msg, $data ? json_encode($data) : ''
         );
 
-        $fileHandle = @fopen($file, 'a');
+        self::$cache[$filename][] = $log;
+        self::$count++;
 
-        $len = fwrite($fileHandle, $log);
+        if (self::$count >= $this->threshold) {
+            self::flush();
+        }
 
-        fclose($fileHandle);
+        return true;
+    }
 
-        return $len;
+    /**
+     * flush log to file
+     * @return bool
+     */
+    public static function flush()
+    {
+        if (!self::$instance || !self::$cache) {
+            return true;
+        }
+
+        foreach (self::$cache as $filename => $logs) {
+            $file = self::$instance->genLogFile($filename, true);
+            $content = '';
+
+            foreach ($logs as $log) {
+                $content .= $log;
+            }
+
+            $fileHandle = fopen($file, 'ab+');
+
+            if (flock($fileHandle, LOCK_EX)) {
+                fwrite($fileHandle, $content);
+                flock($fileHandle, LOCK_UN); // release the lock
+            }
+
+            fclose($fileHandle);
+        }
+
+        self::$cache = [];
+        self::$count = 0;
+        return true;
     }
 
     /**
@@ -174,7 +244,7 @@ class FileLogger
      * @param bool $createDir
      * @return string
      */
-    public function genLogFile($filename, $createDir = false)
+    protected function genLogFile($filename, $createDir = false)
     {
         $file = $this->basePath . '/' . $filename;
 

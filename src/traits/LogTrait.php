@@ -31,6 +31,8 @@ trait LogTrait
         self::LOG_CRAZY => 'CRAZY',
     ];
 
+    private $logCache = [];
+
     /**
      * current log file
      * @var string
@@ -42,6 +44,14 @@ trait LogTrait
      * @var resource
      */
     protected $logFileHandle;
+
+    /**
+     * 日志写入阀值
+     *  即是除了手动调用 self::flushLog() 之外，当 self::$logCache 存储到了阀值时，就会自动写入一次
+     *  设为 0 则是每次记录都立即写入文件
+     * @var int
+     */
+    protected $logThreshold = 100;
 
     /**
      * debug log
@@ -86,12 +96,40 @@ trait LogTrait
         }
 
         if ($this->logFileHandle) {
-            // updateLogFile
-            $this->updateLogFile();
+            $this->logCache[] = Helper::clearColor($logString);
 
-            fwrite($this->logFileHandle, Helper::clearColor($logString));
+            if ($this->shouldFlushLog()) {
+                $this->flushLog();
+            }
         }
 
+        return true;
+    }
+
+    protected function shouldFlushLog()
+    {
+        return $this->isMaster || count($this->logCache) > $this->logThreshold;
+    }
+
+    protected function flushLog()
+    {
+        if (!$this->logCache) {
+            return true;
+        }
+
+        // updateLogFile
+        $this->updateLogFile();
+        $logString = '';
+
+        foreach ($this->logCache as $log) {
+            $logString .= $log;
+        }
+
+        if ($logString) {
+            fwrite($this->logFileHandle, $logString);
+        }
+
+        $this->logCache = [];
         return true;
     }
 

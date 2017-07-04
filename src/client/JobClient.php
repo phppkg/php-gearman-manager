@@ -72,7 +72,7 @@ class JobClient
      * timeout(ms)
      * @var int
      */
-    public $timeout = 50;
+    public $timeout = 500;
 
     /**
      * default retry times

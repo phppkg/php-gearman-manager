@@ -202,6 +202,7 @@ trait ProcessManageTrait
 
                 $code = $this->startDriverWorker($jobAry, $timeouts);
                 $this->log("Worker #$workerId exiting(Exit-Code:$code)", self::LOG_WORKER_INFO);
+                $this->flushLog();
                 $this->quit($code);
                 break;
 

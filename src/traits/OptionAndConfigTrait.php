@@ -245,6 +245,7 @@ trait OptionAndConfigTrait
         $this->config['servers'] = str_replace(' ', '', $config['servers']);
 
         $this->config['log_level'] = (int)$config['log_level'];
+        $this->config['log_threshold'] = (int)$config['log_threshold'];
         $logFile = trim($config['log_file']);
 
         if ($logFile === 'syslog') {
@@ -295,6 +296,7 @@ trait OptionAndConfigTrait
         $this->maxLifetime = $this->config['max_lifetime'];
         $this->verbose = $this->config['log_level'];
         $this->pidFile = $this->config['pid_file'];
+        $this->logThreshold = $this->config['log_threshold'];
 
         unset($config);
     }

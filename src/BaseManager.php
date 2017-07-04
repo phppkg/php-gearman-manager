@@ -126,6 +126,7 @@ abstract class BaseManager implements ManagerInterface
 
         // log
         'log_level' => 4,
+        'log_threshold' => 100,
         // 'day' 'hour', if is empty, not split.
         'log_split' => 'day',
         // will write log by `syslog()`
@@ -247,6 +248,8 @@ abstract class BaseManager implements ManagerInterface
 
         // close logFileHandle
         if ($this->logFileHandle) {
+            $this->flushLog();
+
             fclose($this->logFileHandle);
 
             $this->logFileHandle = null;
